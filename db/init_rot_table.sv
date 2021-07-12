@@ -5,13 +5,13 @@ Notes:
         that is initialized with NULL char (8'h00) (maybe previous_char not needed)
 */
 
-module initTable (
+module init_table (
   input             clk,
   input             rst_n,
   input      [95:0] key_char,
   output reg [7:0]  sub_char[7][7],
-  output            err_repeated_char, // flag to detect repeated characters
-  output            err_invalid_key_char // flag to detect invalid characters   
+  output reg           err_repeated_char, // flag to detect repeated characters
+  output reg           err_invalid_key_char // flag to detect invalid characters   
 );
 
   // ---------------------------------------------------------------------------
@@ -27,28 +27,53 @@ module initTable (
   localparam DIGIT_0_CHAR     = 8'h30;
   localparam DIGIT_9_CHAR     = 8'h39;
 
-  reg key_char_is_letter;
-  reg key_char_is_digit;
+  reg key_char_is_letter; 
+  reg key_char_is_digit; 
+  reg bool_1; 
+  reg bool_2;
 
   reg [7:0] rot_table[7][7];
+  reg [7:0] nul_table[7][7];
 
   integer word_counter = 0;
   integer digit_counter = 0;
-  integer i,j;
+  /*genvar i,j;
+  
   // ---------------------------------------------------------------------------
   // Logic Design
   // ---------------------------------------------------------------------------
+  generate
+	  for(i=1; i < 12; i=i+1) begin
+		if(key_char[i]===key_char[i-1])
+			assign err_repeated_char = 1'b1;
+		assign key_char_is_letter = ((key_char[i] >= UPPERCASE_A_CHAR) && (key_char[i] <= UPPERCASE_Z_CHAR) || 
+								   (key_char[i] >= LOWERCASE_A_CHAR) && (key_char[i] <= LOWERCASE_Z_CHAR));
+		assign key_char_is_digit = (key_char[i] >= DIGIT_0_CHAR) && (key_char[i] <= DIGIT_9_CHAR);
+		assign err_invalid_key_char = !(key_char_is_letter || key_char_is_digit);
+	  end
+  endgenerate*/
+
+  reg k,l;
 
   always @(key_char) begin
     
-    for(i=1; i < 12; i=i+1) begin
-        if(key_char[i]===key_char[i-1])
-          err_repeated_char = 1'b1;
-        key_char_is_letter = ((key_char[i] >= UPPERCASE_A_CHAR) && (key_char[i] <= UPPERCASE_Z_CHAR) || 
-                               (key_char[i] >= LOWERCASE_A_CHAR) && (key_char[i] <= LOWERCASE_Z_CHAR));
-        key_char_is_digit = (key_char[i] >= DIGIT_0_CHAR) && (key_char[i] <= DIGIT_9_CHAR);
-        err_invalid_key_char = !(key_char_is_letter || key_char_is_digit);
-    end
+    bool_1 = 1'b0; 
+    bool_1 = 1'b0; 
+    for(int i=1; i < 12; i=i+1) begin 
+      if(key_char[i]===key_char[i-1]) 
+        bool_1 = 1'b1; 
+      key_char_is_letter = ((key_char[i] >= UPPERCASE_A_CHAR) && (key_char[i] <= UPPERCASE_Z_CHAR) ||  
+                              (key_char[i] >= LOWERCASE_A_CHAR) && (key_char[i] <= LOWERCASE_Z_CHAR)); 
+      key_char_is_digit = (key_char[i] >= DIGIT_0_CHAR) && (key_char[i] <= DIGIT_9_CHAR); 
+      if(!(key_char_is_letter || key_char_is_digit)) 
+        bool_2 = 1'b1; 
+    end 
+ 
+    if(bool_1) 
+      err_repeated_char = 1'b1; 
+    if(bool_2) 
+      err_invalid_key_char = 1'b1;
+	
     /*
     95:88   11
     87:80   10
@@ -63,7 +88,9 @@ module initTable (
     15:8    1
     7:0     0
     */
-    sub_char[0][0] = NUL_CHAR;
+    rot_table[0][0] = NUL_CHAR;
+	
+	
     if(!(err_repeated_char || err_invalid_key_char))
       //rows
       rot_table[1][0] = key_char[7:0];   // s[0] = k[0]
@@ -80,25 +107,35 @@ module initTable (
       rot_table[0][5] = key_char[47:40]; // s[5] = k[5]
       rot_table[0][6] = key_char[63:56]; // s[7] = k[7]
     
-    for (i = 1; i<7; i=i+1) begin
-      for (j = 1; j<7; j=j+1) begin
-        if(i<=5 && j<= 2) begin
-          rot_table[i][j] = LOWERCASE_A_CHAR + word_counter;
-          word_counter = word_counter + 1;
-        end else begin
-          rot_table[i][j] = DIGIT_0_CHAR + digit_counter;
-          digit_counter = digit_counter + 1;
-        end
-      end
-    end  
+	
+	
+	for (k = 1; k<7; k=k+1) begin
+	  for (l = 1; l<7; l=l+1) begin
+		if(k<=5 && l<= 2) begin
+		  rot_table[k][l] = LOWERCASE_A_CHAR + word_counter;
+		  word_counter = word_counter + 1;
+		end else begin
+		  rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
+		  digit_counter = digit_counter + 1;
+		end
+	  end
+	end  
+	
+	for (k = 0; k<7; k=k+1) begin
+	  for (l = 0; l<7; l=l+1) begin
+		nul_table[k][l] = NUL_CHAR;
+	
+	  end
+	end
+	
   end
 
   // Table initialization
   always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
-      sub_char <= NUL_CHAR;
+      sub_char <= nul_table;
     else if(err_invalid_key_char || err_repeated_char)
-      sub_char <= NUL_CHAR;
+      sub_char <= nul_table;
     else
       sub_char <= rot_table;
   end
