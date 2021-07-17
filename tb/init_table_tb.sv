@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Testbench of Caesar's cipher module for debug and corner cases check
 // -----------------------------------------------------------------------------
-module init_rot_table_tb_checks;
+module init_table_tb_checks;
 
   reg clk = 1'b0;
   always #5 clk = !clk;
@@ -26,9 +26,9 @@ module init_rot_table_tb_checks;
     ,.err_invalid_key_char      (/* Unconnected */)     
   );
 
-  reg [7:0] EXPECTED_GEN[7][7];
-  reg [7:0] EXPECTED_CHECK[7][7];
-  reg [7:0] EXPECTED_QUEUE[$][$];
+  reg [6:0][6:0][7:0] EXPECTED_GEN;
+  reg [6:0][6:0][7:0] EXPECTED_CHECK;
+  reg [6:0][6:0][7:0] EXPECTED_QUEUE[$];
   
   localparam NUL_CHAR = 8'h00;
   
@@ -44,7 +44,7 @@ module init_rot_table_tb_checks;
   reg key_char_is_digit; 
   reg bool_1; 
   reg bool_2;
-  reg [7:0] nul_table[7][7];
+  reg [6:0][6:0][7:0] nul_table;
   
   reg err_repeated_char;
   reg err_invalid_key_char;
@@ -53,7 +53,7 @@ module init_rot_table_tb_checks;
   integer digit_counter = 0;
 
   task expected_matrix (
-     output [7:0] rot_table[7][7]
+     output [6:0][6:0][7:0] rot_table
   );
     
     bool_1 = 1'b0; 
@@ -92,12 +92,12 @@ module init_rot_table_tb_checks;
     
     for (int k = 1; k<7; k=k+1) begin
       for (int l = 1; l<7; l=l+1) begin
-      if(k<=5 && l<= 2) begin
-        rot_table[k][l] = LOWERCASE_A_CHAR + word_counter;
-        word_counter = word_counter + 1;
+      if((k>4 && l> 2)||k>5) begin
+       rot_table[k][l] = "0" + digit_counter;
+       digit_counter = digit_counter + 1;
       end else begin
-        rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
-        digit_counter = digit_counter + 1;
+      	rot_table[k][l] = "a" + word_counter;
+        word_counter = word_counter + 1;
       end
       end
     end  
@@ -115,26 +115,30 @@ module init_rot_table_tb_checks;
     
     @(posedge clk); // aspetto il fronte positivo
     
-    begin: STIMULI_1R
-      key_char = "abcdefghilmn";
-      @(posedge clk); // ad ogni ciclo di clock passa un carattere diverso
-      expected_matrix(EXPECTED_GEN);
-      //EXPECTED_QUEUE.push_back(EXPECTED_GEN);
-    end: STIMULI_1R
-    
-    begin: CHECK_1R
-      @(posedge clk);
-      //EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
-      EXPECTED_CHECK = EXPECTED_GEN;
-      for(int i = 0; i < 7; i++) begin
-        for (int j = 0; j < 7; j++) begin
-          $display("%c %c %-5s", sub_char[i][j], EXPECTED_CHECK[i][j], EXPECTED_CHECK[i][j] === sub_char[i][j] ? "OK" : "ERROR");
+    fork
+
+      begin: STIMULI_1R
+        key_char = "abcdefghilmn";
+        @(posedge clk); // ad ogni ciclo di clock passa un carattere diverso
+        expected_matrix(EXPECTED_GEN);
+        EXPECTED_QUEUE.push_back(EXPECTED_GEN);
+      end: STIMULI_1R
+
+      begin: CHECK_1R
+        @(posedge clk);
+        EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
+        @(posedge clk);
+        //EXPECTED_CHECK = EXPECTED_GEN;
+        for(int i = 0; i < 7; i++) begin
+          for (int j = 0; j < 7; j++) begin
+            $display("%c %c %-5s", sub_char[i][j], EXPECTED_CHECK[i][j], EXPECTED_CHECK[i][j] === sub_char[i][j] ? "OK" : "ERROR");
+          end
+          $display("\n");
+          if(EXPECTED_CHECK !== nul_table) $stop;
         end
-        $display("\n");
-        if(EXPECTED_CHECK !== nul_table) $stop;
-      end
-    end: CHECK_1R
-    
+      end: CHECK_1R
+    join
+
     $stop;
     
   end
