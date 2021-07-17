@@ -1,4 +1,6 @@
 /*
+
+************DEPRECATOOOOOOO***********************************************
 Notes:
  1) How to detect repeated char?
     -   first idea: feedback wire from output reg 'sub_char' to the input 'previous_char' and compare with key_char
