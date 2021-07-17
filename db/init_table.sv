@@ -71,7 +71,7 @@ module init_table (
       rot_table[0][5] = key_char[47:40]; // s[5] = k[5]
       rot_table[0][6] = key_char[63:56]; // s[7] = k[7]
     
-	  for (int k = 1; k<7; k=k+1) begin
+    for (int k = 1; k<7; k=k+1) begin
       for (int l = 1; l<7; l=l+1) begin
         if( (k>4 && l>2) || k>5 ) begin
         rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
