@@ -1,7 +1,7 @@
 // -----------------------------------------------------------------------------
 // Testbench of Caesar's cipher module for debug and corner cases check
 // -----------------------------------------------------------------------------
-module init_table_tb_checks;
+module init_table_tb;
 
   reg clk = 1'b0;
   always #5 clk = !clk;
@@ -14,8 +14,8 @@ module init_table_tb_checks;
     -> reset_deassertion;
   end
   
-  reg   [95:0] key_char;
-  wire   [7:0]  sub_char[7][7];
+  reg   [95:0]            key_char;
+  wire  [6:0][6:0][7:0]   sub_char;
 
   init_table init_table (
      .clk                       (clk)
@@ -41,10 +41,8 @@ module init_table_tb_checks;
 
   
   reg key_char_is_letter; 
-  reg key_char_is_digit; 
-  reg bool_1; 
-  reg bool_2;
-  reg [6:0][6:0][7:0] nul_table;
+  reg key_char_is_digit;
+  reg [6:0][6:0][7:0] nul_table = {49{NUL_CHAR}};
   
   reg err_repeated_char;
   reg err_invalid_key_char;
@@ -56,25 +54,23 @@ module init_table_tb_checks;
      output [6:0][6:0][7:0] rot_table
   );
     
-    bool_1 = 1'b0; 
-    bool_1 = 1'b0; 
-    for(int i = 1; i < 12; i=i+1) begin 
-      if(key_char[i]===key_char[i-1]) 
-        bool_1 = 1'b1; 
-      key_char_is_letter = ((key_char[i] >= UPPERCASE_A_CHAR) && (key_char[i] <= UPPERCASE_Z_CHAR) ||  
-                              (key_char[i] >= LOWERCASE_A_CHAR) && (key_char[i] <= LOWERCASE_Z_CHAR)); 
-      key_char_is_digit = (key_char[i] >= DIGIT_0_CHAR) && (key_char[i] <= DIGIT_9_CHAR); 
-      if(!(key_char_is_letter || key_char_is_digit)) 
-        bool_2 = 1'b1; 
-    end 
- 
-    if(bool_1) 
-      err_repeated_char = 1'b1; 
-    if(bool_2) 
-      err_invalid_key_char = 1'b1;
-    
+    //check presence of repeated or invalid characters in the key
+    // (i*8)+7:i*8 = i*8 +: 8
+    err_repeated_char = 0;
+    err_invalid_key_char = 0;
+    for(int i=0; i<12; i=i+1) begin
+      key_char_is_letter = ((key_char[i*8 +: 8] >= UPPERCASE_A_CHAR) && (key_char[i*8 +: 8] <= UPPERCASE_Z_CHAR) ||  
+                              (key_char[i*8 +: 8] >= LOWERCASE_A_CHAR) && (key_char[i*8 +: 8] <= LOWERCASE_Z_CHAR));
+      key_char_is_digit = (key_char[i*8 +: 8] >= DIGIT_0_CHAR) && (key_char[i*8 +: 8] <= DIGIT_9_CHAR);
+      err_invalid_key_char = err_invalid_key_char || !(key_char_is_letter || key_char_is_digit); 
+      for(int j = 0; j< 12; j=j+1) begin
+        if(i!=j) err_repeated_char = err_repeated_char || (key_char[i*8 +: 8] == key_char[j*8 +: 8]);
+      end   
+      if(err_repeated_char || err_invalid_key_char) break;
+    end
+
     rot_table[0][0] = NUL_CHAR;
-    if(!(err_repeated_char || err_invalid_key_char))
+    if(!(err_repeated_char || err_invalid_key_char)) begin
       //rows
       rot_table[1][0] = key_char[7:0];   // s[0] = k[0]
       rot_table[2][0] = key_char[87:80]; // s[10] = k[10]
@@ -89,25 +85,19 @@ module init_table_tb_checks;
       rot_table[0][4] = key_char[79:72]; // s[9] = k[9]
       rot_table[0][5] = key_char[47:40]; // s[5] = k[5]
       rot_table[0][6] = key_char[63:56]; // s[7] = k[7]
+    end
     
     for (int k = 1; k<7; k=k+1) begin
       for (int l = 1; l<7; l=l+1) begin
-      if((k>4 && l> 2)||k>5) begin
-       rot_table[k][l] = "0" + digit_counter;
-       digit_counter = digit_counter + 1;
-      end else begin
-      	rot_table[k][l] = "a" + word_counter;
-        word_counter = word_counter + 1;
-      end
+        if( (k>4 && l>2) || k>5 ) begin
+          rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
+          digit_counter = digit_counter + 1;
+        end else begin
+          rot_table[k][l] = LOWERCASE_A_CHAR + word_counter;
+          word_counter = word_counter + 1;
+        end
       end
     end  
-    
-    for (int k = 0; k<7; k=k+1) begin
-      for (int l = 0; l<7; l=l+1) begin
-      nul_table[k][l] = NUL_CHAR;
-      end
-    end
-    
   endtask
   
   initial begin
@@ -119,22 +109,25 @@ module init_table_tb_checks;
 
       begin: STIMULI_1R
         key_char = "abcdefghilmn";
-        @(posedge clk); // ad ogni ciclo di clock passa un carattere diverso
+        @(posedge clk);
         expected_matrix(EXPECTED_GEN);
+	      for(int i = 0; i < 7; i++) begin
+          for (int j = 0; j < 7; j++) begin
+             $display("EG: (%d,%d) %c ",i,j, EXPECTED_GEN[i][j]);
+          end
+        end
         EXPECTED_QUEUE.push_back(EXPECTED_GEN);
       end: STIMULI_1R
 
       begin: CHECK_1R
         @(posedge clk);
-        EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
         @(posedge clk);
-        //EXPECTED_CHECK = EXPECTED_GEN;
+        EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
         for(int i = 0; i < 7; i++) begin
           for (int j = 0; j < 7; j++) begin
             $display("%c %c %-5s", sub_char[i][j], EXPECTED_CHECK[i][j], EXPECTED_CHECK[i][j] === sub_char[i][j] ? "OK" : "ERROR");
           end
-          $display("\n");
-          if(EXPECTED_CHECK !== nul_table) $stop;
+          //if(EXPECTED_CHECK != nul_table) $stop;
         end
       end: CHECK_1R
     join
