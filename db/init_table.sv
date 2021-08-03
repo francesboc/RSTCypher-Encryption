@@ -33,7 +33,7 @@ module init_table (
   reg [7:0] temp_line;
 
   reg [6:0][6:0][7:0] rot_table = {49{NUL_CHAR}}; //initialization with null characters
-  reg [15:0] sub_str = {2{NUL_CHAR}};;
+  reg [15:0] sub_str = {2{NUL_CHAR}};
 
   integer word_counter;
   integer digit_counter;
