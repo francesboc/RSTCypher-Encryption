@@ -1,10 +1,43 @@
-module rst_cipher (
+module rst_cipher(
+   input clk
+  ,input rst_n
+  ,input key_valid
+  ,input ptxt_valid
+  ,input [0:11][7:0] key
+  ,input [7:0] ptxt_char
+  ,output [15:0] ctxt_str
+  ,output ctxt_ready
+);
+
+  wire [11:0][7:0] rot_table;
+
+  rot_table ROT_TABLE(
+    .clk(clk),
+    .rst_n(rst_n),
+    .key_valid(key_valid),
+    .ctxt_valid(ctxt_ready), //feedback wire
+    .key(key),
+    .rot_table(rot_table)
+  );
+
+  substitution_law SUB_LAW(
+    .ptxt_char(ptxt_char),
+    .ptxt_valid(ptxt_valid),
+    .rot_table(rot_table),
+    .ctxt_str(ctxt_str),
+    .ctxt_valid(ctxt_ready)
+  );
+
+endmodule
+
+module rot_table (
    input clk
   ,input rst_n
   ,input key_valid
   ,input ctxt_valid
   ,input [0:11][7:0] key  // 12 bytes ([7:0]) indexed as 0 to 11
   /* other ports (if any) ... */
+  ,output reg [0:11][7:0] rot_table
 );
 
   reg [0:11][7:0] rot_table;
@@ -216,7 +249,9 @@ endmodule
 module substitution_law(
   input [7:0] ptxt_char,
   input [0:11][7:0] rot_table,
-  output reg [15:0] ctxt_str 
+  input ptxt_valid,
+  output reg [15:0] ctxt_str, 
+  output ctxt_valid
 );
 
   always @(*) begin
