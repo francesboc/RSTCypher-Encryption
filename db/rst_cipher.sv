@@ -1,4 +1,4 @@
-module rot_table (
+module rst_cipher (
    input clk
   ,input rst_n
   ,input key_valid
@@ -10,19 +10,19 @@ module rot_table (
   reg [0:11][7:0] rot_table;
 
   check_key check(
-    c0(key[0]),
-    c1(key[1]),
-    c2(key[2]),
-    c3(key[3]),
-    c4(key[4]),
-    c5(key[5]),
-    c6(key[6]),
-    c7(key[7]),
-    c8(key[8]),
-    c9(key[9]),
-    c10(key[10]),
-    c11(key[11]),
-    is_valid(key_valid)
+    .c0(key[0]),
+    .c1(key[1]),
+    .c2(key[2]),
+    .c3(key[3]),
+    .c4(key[4]),
+    .c5(key[5]),
+    .c6(key[6]),
+    .c7(key[7]),
+    .c8(key[8]),
+    .c9(key[9]),
+    .c10(key[10]),
+    .c11(key[11]),
+    .is_valid(key_valid)
   );
 
   always @ (posedge clk or negedge rst_n) 
