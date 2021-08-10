@@ -1,7 +1,6 @@
 module rst_cipher(
    input clk
   ,input rst_n
-  ,input key_valid
   ,input ptxt_valid
   ,input [0:11][7:0] key
   ,input [7:0] ptxt_char
@@ -9,8 +8,25 @@ module rst_cipher(
   ,output ctxt_ready
 );
 
-  wire [11:0][7:0] rot_table;
-
+  wire [0:11][7:0] rot_table;
+  wire key_valid;
+  
+  check_key check(
+    .c0(key[0]),
+    .c1(key[1]),
+    .c2(key[2]),
+    .c3(key[3]),
+    .c4(key[4]),
+    .c5(key[5]),
+    .c6(key[6]),
+    .c7(key[7]),
+    .c8(key[8]),
+    .c9(key[9]),
+    .c10(key[10]),
+    .c11(key[11]),
+    .is_valid(key_valid)
+  );
+	
   rot_table ROT_TABLE(
     .clk(clk),
     .rst_n(rst_n),
@@ -40,23 +56,7 @@ module rot_table (
   ,output reg [0:11][7:0] rot_table
 );
 
-  reg [0:11][7:0] rot_table;
-
-  check_key check(
-    .c0(key[0]),
-    .c1(key[1]),
-    .c2(key[2]),
-    .c3(key[3]),
-    .c4(key[4]),
-    .c5(key[5]),
-    .c6(key[6]),
-    .c7(key[7]),
-    .c8(key[8]),
-    .c9(key[9]),
-    .c10(key[10]),
-    .c11(key[11]),
-    .is_valid(key_valid)
-  );
+  //reg [0:11][7:0] rot_table;
 
   always @ (posedge clk or negedge rst_n) 
     if(!rst_n)
@@ -80,6 +80,7 @@ module rot_table (
     end
     else if(ctxt_valid) begin
       /* perform rotation */
+		rot_table <= {12{8'd0}};
     end
 endmodule
 
@@ -251,308 +252,79 @@ module substitution_law(
   input [0:11][7:0] rot_table,
   input ptxt_valid,
   output reg [15:0] ctxt_str, 
-  output ctxt_valid
+  output reg ctxt_valid
 );
 
   always @(*) begin
     // row 15:8 column 7:0
-    case(ptxt_char)
-      ("a" || "A") : ctxt_str = {rot_table[0],rot_table[6]};
-      ("b" || "B") : ctxt_str = {rot_table[0],rot_table[7]};
-      ("c" || "C") : ctxt_str = {rot_table[0],rot_table[8]};
-      ("d" || "D") : ctxt_str = {rot_table[0],rot_table[9]};
-      ("e" || "E") : ctxt_str = {rot_table[0],rot_table[10]};
-      ("f" || "F") : ctxt_str = {rot_table[0],rot_table[11]};
-      ("g" || "G") : ctxt_str = {rot_table[1],rot_table[6]};
-      ("h" || "H") : ctxt_str = {rot_table[1],rot_table[7]};
-      ("i" || "I") : ctxt_str = {rot_table[1],rot_table[8]};
-      ("j" || "J") : ctxt_str = {rot_table[1],rot_table[9]};
-      ("k" || "K") : ctxt_str = {rot_table[1],rot_table[10]};
-      ("l" || "L") : ctxt_str = {rot_table[1],rot_table[11]};
-      ("m" || "M") : ctxt_str = {rot_table[2],rot_table[6]};
-      ("n" || "N") : ctxt_str = {rot_table[2],rot_table[7]};
-      ("o" || "O") : ctxt_str = {rot_table[2],rot_table[8]};
-      ("p" || "P") : ctxt_str = {rot_table[2],rot_table[9]};
-      ("q" || "Q") : ctxt_str = {rot_table[2],rot_table[10]};
-      ("r" || "R") : ctxt_str = {rot_table[2],rot_table[11]};
-      ("s" || "S") : ctxt_str = {rot_table[3],rot_table[6]};
-      ("t" || "T") : ctxt_str = {rot_table[3],rot_table[7]};
-      ("u" || "U") : ctxt_str = {rot_table[3],rot_table[8]};
-      ("v" || "V") : ctxt_str = {rot_table[3],rot_table[9]};
-      ("w" || "W") : ctxt_str = {rot_table[3],rot_table[10]};
-      ("x" || "X") : ctxt_str = {rot_table[3],rot_table[11]};
-      ("y" || "Y") : ctxt_str = {rot_table[4],rot_table[6]};
-      ("z" || "Z") : ctxt_str = {rot_table[4],rot_table[7]};
-      ("0" || "Q") : ctxt_str = {rot_table[4],rot_table[8]};
-      ("1") : ctxt_str = {rot_table[4],rot_table[9]};
-      ("2") : ctxt_str = {rot_table[4],rot_table[10]};
-      ("3") : ctxt_str = {rot_table[4],rot_table[11]};
-      ("4") : ctxt_str = {rot_table[5],rot_table[6]};
-      ("5") : ctxt_str = {rot_table[5],rot_table[7]};
-      ("6") : ctxt_str = {rot_table[5],rot_table[8]};
-      ("7") : ctxt_str = {rot_table[5],rot_table[9]};
-      ("8") : ctxt_str = {rot_table[5],rot_table[10]};
-      ("9") : ctxt_str = {rot_table[5],rot_table[11]};
+	ctxt_valid = 1;
+	case(ptxt_char)
+      (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
+		(8'd98) : ctxt_str = {rot_table[0],rot_table[7]}; 
+		(8'd99) : ctxt_str = {rot_table[0],rot_table[8]}; 
+		(8'd100) : ctxt_str = {rot_table[0],rot_table[9]}; 
+		(8'd101) : ctxt_str = {rot_table[0],rot_table[10]}; 
+		(8'd102) : ctxt_str = {rot_table[0],rot_table[11]}; 
+		(8'd103) : ctxt_str = {rot_table[1],rot_table[6]}; 
+		(8'd104) : ctxt_str = {rot_table[1],rot_table[7]}; 
+		(8'd105) : ctxt_str = {rot_table[1],rot_table[8]}; 
+		(8'd106) : ctxt_str = {rot_table[1],rot_table[9]}; 
+		(8'd107) : ctxt_str = {rot_table[1],rot_table[10]}; 
+		(8'd108) : ctxt_str = {rot_table[1],rot_table[11]}; 
+		(8'd109) : ctxt_str = {rot_table[2],rot_table[6]}; 
+		(8'd110) : ctxt_str = {rot_table[2],rot_table[7]}; 
+		(8'd111) : ctxt_str = {rot_table[2],rot_table[8]}; 
+		(8'd112) : ctxt_str = {rot_table[2],rot_table[9]}; 
+		(8'd113) : ctxt_str = {rot_table[2],rot_table[10]}; 
+		(8'd114) : ctxt_str = {rot_table[2],rot_table[11]}; 
+		(8'd115) : ctxt_str = {rot_table[3],rot_table[6]}; 
+		(8'd116) : ctxt_str = {rot_table[3],rot_table[7]}; 
+		(8'd117) : ctxt_str = {rot_table[3],rot_table[8]}; 
+		(8'd118) : ctxt_str = {rot_table[3],rot_table[9]}; 
+		(8'd119) : ctxt_str = {rot_table[3],rot_table[10]}; 
+		(8'd120) : ctxt_str = {rot_table[3],rot_table[11]}; 
+		(8'd121) : ctxt_str = {rot_table[4],rot_table[6]}; 
+		(8'd122) : ctxt_str = {rot_table[4],rot_table[7]}; 
+		(8'd65) : ctxt_str = {rot_table[0],rot_table[6]}; 
+		(8'd66) : ctxt_str = {rot_table[0],rot_table[7]}; 
+		(8'd67) : ctxt_str = {rot_table[0],rot_table[8]}; 
+		(8'd68) : ctxt_str = {rot_table[0],rot_table[9]}; 
+		(8'd69) : ctxt_str = {rot_table[0],rot_table[10]}; 
+		(8'd70) : ctxt_str = {rot_table[0],rot_table[11]}; 
+		(8'd71) : ctxt_str = {rot_table[1],rot_table[6]}; 
+		(8'd72) : ctxt_str = {rot_table[1],rot_table[7]}; 
+		(8'd73) : ctxt_str = {rot_table[1],rot_table[8]}; 
+		(8'd74) : ctxt_str = {rot_table[1],rot_table[9]}; 
+		(8'd75) : ctxt_str = {rot_table[1],rot_table[10]}; 
+		(8'd76) : ctxt_str = {rot_table[1],rot_table[11]}; 
+		(8'd77) : ctxt_str = {rot_table[2],rot_table[6]}; 
+		(8'd78) : ctxt_str = {rot_table[2],rot_table[7]}; 
+		(8'd79) : ctxt_str = {rot_table[2],rot_table[8]}; 
+		(8'd80) : ctxt_str = {rot_table[2],rot_table[9]}; 
+		(8'd81) : ctxt_str = {rot_table[2],rot_table[10]}; 
+		(8'd82) : ctxt_str = {rot_table[2],rot_table[11]}; 
+		(8'd83) : ctxt_str = {rot_table[3],rot_table[6]}; 
+		(8'd84) : ctxt_str = {rot_table[3],rot_table[7]}; 
+		(8'd85) : ctxt_str = {rot_table[3],rot_table[8]}; 
+		(8'd86) : ctxt_str = {rot_table[3],rot_table[9]}; 
+		(8'd87) : ctxt_str = {rot_table[3],rot_table[10]}; 
+		(8'd88) : ctxt_str = {rot_table[3],rot_table[11]}; 
+		(8'd89) : ctxt_str = {rot_table[4],rot_table[6]}; 
+		(8'd90) : ctxt_str = {rot_table[4],rot_table[7]}; 
+		(8'd48) : ctxt_str = {rot_table[4],rot_table[8]}; 
+		(8'd49) : ctxt_str = {rot_table[4],rot_table[9]}; 
+		(8'd50) : ctxt_str = {rot_table[4],rot_table[10]}; 
+		(8'd51) : ctxt_str = {rot_table[4],rot_table[11]}; 
+		(8'd52) : ctxt_str = {rot_table[5],rot_table[6]}; 
+		(8'd53) : ctxt_str = {rot_table[5],rot_table[7]}; 
+		(8'd54) : ctxt_str = {rot_table[5],rot_table[8]}; 
+		(8'd55) : ctxt_str = {rot_table[5],rot_table[9]}; 
+		(8'd56) : ctxt_str = {rot_table[5],rot_table[10]}; 
+		(8'd57) : ctxt_str = {rot_table[5],rot_table[11]};
+		default: begin
+			ctxt_str = {2{8'h00}};
+			ctxt_valid = 0;
+		end
     endcase
   end
 endmodule
-
-  /*
-  wire is_a_char;
-  wire is_b_char;
-  wire is_c_char;
-  wire is_d_char;
-  wire is_e_char;
-  wire is_f_char;
-  wire is_g_char;
-  wire is_h_char;
-  wire is_i_char;
-  wire is_j_char;
-  wire is_k_char;
-  wire is_l_char;
-  wire is_m_char;
-  wire is_n_char;
-  wire is_o_char;
-  wire is_p_char;
-  wire is_q_char;
-  wire is_r_char;
-  wire is_s_char;
-  wire is_t_char;
-  wire is_w_char;
-  wire is_x_char;
-  wire is_y_char;
-  wire is_z_char;
-  wire is_0_digit;
-  wire is_1_digit;
-  wire is_2_digit;
-  wire is_3_digit;
-  wire is_4_digit;
-  wire is_5_digit;
-  wire is_6_digit;
-  wire is_7_digit;
-  wire is_8_digit;
-  wire is_9_digit;
-
-  assign is_a_char = ptxt_char === "a" || ptxt_char === "A";
-  assign is_b_char = ptxt_char === "b" || ptxt_char === "B";  
-  assign is_c_char = ptxt_char === "c" || ptxt_char === "C";
-  assign is_d_char = ptxt_char === "d" || ptxt_char === "D";
-  assign is_e_char = ptxt_char === "e" || ptxt_char === "E";
-  assign is_f_char = ptxt_char === "f" || ptxt_char === "F";
-  assign is_g_char = ptxt_char === "g" || ptxt_char === "G";
-  assign is_h_char = ptxt_char === "h" || ptxt_char === "H";
-  assign is_i_char = ptxt_char === "i" || ptxt_char === "I";
-  assign is_j_char = ptxt_char === "j" || ptxt_char === "J";
-  assign is_k_char = ptxt_char === "k" || ptxt_char === "K";
-  assign is_l_char = ptxt_char === "l" || ptxt_char === "L";
-  assign is_m_char = ptxt_char === "m" || ptxt_char === "M";
-  assign is_n_char = ptxt_char === "n" || ptxt_char === "N";
-  assign is_o_char = ptxt_char === "o" || ptxt_char === "O";
-  assign is_p_char = ptxt_char === "p" || ptxt_char === "P";
-  assign is_q_char = ptxt_char === "q" || ptxt_char === "Q";
-  assign is_r_char = ptxt_char === "r" || ptxt_char === "R";
-  assign is_s_char = ptxt_char === "s" || ptxt_char === "S";
-  assign is_t_char = ptxt_char === "t" || ptxt_char === "T";
-  assign is_w_char = ptxt_char === "w" || ptxt_char === "W";
-  assign is_x_char = ptxt_char === "x" || ptxt_char === "X";
-  assign is_y_char = ptxt_char === "y" || ptxt_char === "Y";
-  assign is_z_char = ptxt_char === "z" || ptxt_char === "Z";
-  assign is_0_digit = ptxt_char === "0";
-  assign is_1_digit = ptxt_char === "1";
-  assign is_2_digit = ptxt_char === "2";
-  assign is_3_digit = ptxt_char === "3";
-  assign is_4_digit = ptxt_char === "4";
-  assign is_5_digit = ptxt_char === "5";
-  assign is_6_digit = ptxt_char === "6";
-  assign is_7_digit = ptxt_char === "7";
-  assign is_8_digit = ptxt_char === "8";
-  assign is_9_digit = ptxt_char === "9";
-  */
- /* 
-module rst_cipher (
-  input             clk,
-  input             rst_n,
-  input      [95:0] key_char,
-  input      [7:0]  ptxt_char,
-  input             ptxt_valid,
-  output reg [15:0] ctxt_str, // two characters ciphertext output
-  output reg        err_invalid_key, // flag to detect invalid characters
-  output reg        err_invalid_ptxt, // flag to detect invalid plaintext char
-  output reg        err_key_not_installed, // flag to detect invalid plaintext char
-  output reg        ctxt_ready
-);
-
-  // ---------------------------------------------------------------------------
-  // Variables
-  // ---------------------------------------------------------------------------
-  
-  localparam NUL_CHAR = 8'h00;
-  localparam UPPERCASE_A_CHAR = 8'h41;
-  localparam UPPERCASE_Z_CHAR = 8'h5A;
-  localparam LOWERCASE_A_CHAR = 8'h61;
-  localparam LOWERCASE_Z_CHAR = 8'h7A;
-  localparam DIGIT_0_CHAR     = 8'h30;
-  localparam DIGIT_9_CHAR     = 8'h39;
-
-  reg err_repeated_char = 0; // flag to detect repeated characters
-  reg err_invalid_key_char = 0; // flag to detect invalid characters
-  reg err_invalid_ptxt_char = 0;
-  reg char_is_letter;
-  reg char_is_digit;
-  reg is_table_initialized = 0; //initialization flag
-  reg [7:0] temp_row;
-  reg [7:0] temp_line;
-
-  reg [6:0][6:0][7:0] rot_table = {49{NUL_CHAR}}; //initialization with null characters
-  reg [15:0] sub_str = {2{NUL_CHAR}};
-
-  integer word_counter;
-  integer digit_counter;
-
-  // ---------------------------------------------------------------------------
-  // Logic Design
-  // ---------------------------------------------------------------------------
-
-  //table initialization
-  always @(key_char) begin
-    if (!is_table_initialized) begin
-      //check presence of repeated or invalid characters in the key
-      // (i*8)+7:i*8 = i*8 +: 8 --> needed to indexing regs
-      err_repeated_char = 0;
-      err_invalid_key_char = 0;
-      for(int i=0; i<12; i=i+1) begin
-        char_is_letter = ((key_char[i*8 +: 8] >= UPPERCASE_A_CHAR) && (key_char[i*8 +: 8] <= UPPERCASE_Z_CHAR) ||  
-                              (key_char[i*8 +: 8] >= LOWERCASE_A_CHAR) && (key_char[i*8 +: 8] <= LOWERCASE_Z_CHAR));
-        char_is_digit = (key_char[i*8 +: 8] >= DIGIT_0_CHAR) && (key_char[i*8 +: 8] <= DIGIT_9_CHAR);
-        err_invalid_key_char = err_invalid_key_char || !(char_is_letter || char_is_digit);    
-        for(int j = 0; j< 12; j=j+1) begin
-          if(i!=j)
-            err_repeated_char = err_repeated_char || (key_char[i*8 +: 8] == key_char[j*8 +: 8]);
-        end
-        if(err_repeated_char || err_invalid_key_char)
-          break;
-      end
-      /*11(a)    10(b)   9(c)    8(d)
-        95:88    87:80   79:72   71:64
-        7(e)     6(f)    5(g)    4(h)
-        63:56    55:48   47:40   39:32
-        3(i)     2(j)    1(k)    0(l)
-        31:24    23:16   15:8    7:0
-      
-      //rot_table[0][0] = NUL_CHAR;
-      if(!(err_repeated_char || err_invalid_key_char)) begin
-        is_table_initialized=1;
-        //rows
-        rot_table[1][0] = key_char[95:88];   // s[0] = k[0] = a
-        rot_table[2][0] = key_char[15:8]; // s[10] = k[10] = k
-        rot_table[3][0] = key_char[79:72]; // s[2] = k[2] = c
-        rot_table[4][0] = key_char[31:24]; // s[8] = k[8] = i
-        rot_table[5][0] = key_char[63:56]; // s[4] = k[4] = e
-        rot_table[6][0] = key_char[47:40]; // s[6] = k[6] = g
-        //columns
-        rot_table[0][1] = key_char[87:80];  // s[1] = k[1] = b
-        rot_table[0][2] = key_char[7:0]; // s[11] = k[11] = l
-        rot_table[0][3] = key_char[71:64]; // s[3] = k[3] = d
-        rot_table[0][4] = key_char[23:16]; // s[9] = k[9] = j
-        rot_table[0][5] = key_char[55:48]; // s[5] = k[5] = f
-        rot_table[0][6] = key_char[39:32]; // s[7] = k[7] = h
-
-        digit_counter = 0;
-        word_counter = 0;
-        //initialization with letters and digits
-        for (int k = 1; k<7; k=k+1) begin
-          for (int l = 1; l<7; l=l+1) begin
-            if( (k>4 && l>2) || k>5 ) begin
-            rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
-            digit_counter = digit_counter + 1;
-            end else begin
-              rot_table[k][l] = LOWERCASE_A_CHAR + word_counter;
-              word_counter = word_counter + 1;
-            end
-          end
-        end
-      end
-
-    end
-  end
-
-  // substitution and rotation
-  always @(*) begin
-    ctxt_ready = 0;
-    if(is_table_initialized && ptxt_valid)begin
-      //checks on plaintext
-      err_invalid_ptxt_char = 0;
-      char_is_letter = ((ptxt_char >= UPPERCASE_A_CHAR) && (ptxt_char <= UPPERCASE_Z_CHAR) ||  
-                        (ptxt_char >= LOWERCASE_A_CHAR) && (ptxt_char <= LOWERCASE_Z_CHAR));
-      char_is_digit = (ptxt_char >= DIGIT_0_CHAR) && (ptxt_char <= DIGIT_9_CHAR);
-      err_invalid_ptxt_char = !(char_is_letter || char_is_digit);
-
-      if(!err_invalid_ptxt_char)begin
-        //Substituition
-        for (int r=1; r<7; r=r+1 ) begin
-          for (int c=1; c <7; c=c+1) begin
-            if( rot_table[r][c] == ptxt_char || rot_table[r][c] == (ptxt_char + 8'd32)) begin
-              sub_str[15:8] = rot_table[r][0];
-              sub_str[7:0] = rot_table[0][c];
-            end
-          end
-        end
-        //Rotation
-        temp_row = rot_table[0][6];
-        temp_line = rot_table[6][0];
-        for (int i=6; i>=2; i=i-1 ) begin 
-          rot_table[0][i] = rot_table[0][i-1];
-          rot_table[i][0] = rot_table[i-1][0];
-        end
-        rot_table[0][1] = temp_row;
-        rot_table[1][0] = temp_line;
-      end
-
-    end
-  end
-
-  // Output string
-  always @(posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
-      err_invalid_key <= 0;
-      err_invalid_ptxt <=0;
-      ctxt_ready <= 0;
-      err_key_not_installed <= 0;
-      is_table_initialized = 0;
-      ctxt_str <= {2{NUL_CHAR}};
-    end else if(!is_table_initialized) begin
-      if(err_repeated_char || err_invalid_key_char) begin
-        err_invalid_key <= 1;
-        err_key_not_installed <= 0;
-      end else begin
-        err_invalid_key <= 0;
-        err_key_not_installed <= 1;
-      end
-      err_invalid_ptxt <= 0;
-      ctxt_ready <= 0;
-      ctxt_str <= {2{NUL_CHAR}};
-    // invalid plaintext character
-    end else if(err_invalid_ptxt_char) begin
-      err_invalid_key <= 0;
-      err_invalid_ptxt <= 1;
-      err_key_not_installed <= 0;
-      ctxt_ready <= 0;
-      ctxt_str <= {2{NUL_CHAR}};
-    //check this
-    end else if(!ptxt_valid) begin
-      err_invalid_key <= 0;
-      err_invalid_ptxt <= 0;
-      err_key_not_installed <= 0;
-      ctxt_ready <= 0;
-      ctxt_str <= {2{NUL_CHAR}};
-    end else begin
-      err_invalid_key <= 0;
-      err_invalid_ptxt <= 0;
-      err_key_not_installed <= 0;
-      ctxt_ready <= 1;
-      ctxt_str <= sub_str;
-    end
-  end
-
-endmodule
-*/
