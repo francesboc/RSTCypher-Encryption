@@ -31,7 +31,7 @@ module rst_cipher_tb;
     ,.ptxt_char                 (ptxt_char)
     ,.ctxt_str                  (ctxt_char)
     //,.err_invalid_key           (err_invalid_key)
-    //,.err_invalid_ptxt          (err_invalid_ptx_char)
+    ,.err_invalid_ptxt_char     (err_invalid_ptx_char)
     //,.err_key_not_installed     (err_key_not_installed)
     ,.ctxt_ready                (ctxt_ready)
   );
@@ -167,24 +167,35 @@ module rst_cipher_tb;
     //is_table_initialized = 0;
    
     begin: TEST_KEY_NOT_INSTALLED
+      // TEST OK
       $display("--> 1 %s %d ",ctxt_char, ctxt_ready);
       key_char = "abcdefghijkl";
       @(posedge clk);
       ptxt_valid = 1;
-      ptxt_char = "a";
-      $display("--> 2 %s %d",ctxt_char, ctxt_ready);
+      ptxt_char = "a"; //expected ab and rotation
       @(posedge clk);
-      //key_char = "abcdefghijkl";
-      //ptxt_valid = 1;
-      //ptxt_char = "b";
-      $display("--> 3 %s %d",ctxt_char, ctxt_ready);
+      ptxt_valid = 1;
+      ptxt_char = "-"; //no rotation
       @(posedge clk);
-      //ptxt_valid = 1;
-      //ptxt_char = "a";
-      //@(posedge clk);
-      //$display("--> 4 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-      //@(posedge clk);
-      //$display("--> 5 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
+      ptxt_valid = 1;
+      ptxt_char = "a"; // expected gh and rotation
+      @(posedge clk);
+      @(posedge clk);
+      rst_n = 0;
+      @(posedge clk);
+      rst_n = 1;
+      ptxt_valid = 1;
+      ptxt_char = "-";
+      @(posedge clk);
+      @(posedge clk);
+      ptxt_valid = 1;
+      ptxt_char = "0";
+      @(posedge clk);
+      key_char = "abcde???ijkl";
+      @(posedge clk);
+      ptxt_valid = 1;
+      ptxt_char = "0";
+      key_char = "abcdefghijkl";
     end: TEST_KEY_NOT_INSTALLED
     /*
     begin: TEST_WRONG_KEY

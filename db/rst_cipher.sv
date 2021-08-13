@@ -6,6 +6,8 @@ module rst_cipher(
   ,input [7:0] ptxt_char
   ,output [15:0] ctxt_str
   ,output ctxt_ready
+  ,output err_invalid_ptxt_char
+  ,output err_invalid_key
 );
 
   wire [11:0][7:0] rot_table;
@@ -27,6 +29,8 @@ module rst_cipher(
     .is_valid(key_valid)
   );
 	
+  assign err_invalid_key = key_valid;
+
   rot_table ROT_TABLE(
     .clk(clk),
     .rst_n(rst_n),
@@ -40,8 +44,10 @@ module rst_cipher(
     .ptxt_char(ptxt_char),
     .ptxt_valid(ptxt_valid),
     .rot_table(rot_table),
+    .is_key_installed(key_valid),
     .ctxt_str(ctxt_str),
-    .ctxt_valid(ctxt_ready)
+    .ctxt_valid(ctxt_ready),
+    .err_invalid_ptxt_char(err_invalid_ptxt_char)
   );
 
 endmodule
@@ -270,85 +276,119 @@ module check_key (c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,is_valid);
   assign is_valid = (keyformalvalid===1'b1) && (check_all===1'b0) ? 1'b1:1'b0;
 endmodule
 
-// controlli su plaintext?
 module substitution_law(
   input [7:0] ptxt_char,
   input [11:0][7:0] rot_table,
   input ptxt_valid,
+  input is_key_installed,
   output reg [15:0] ctxt_str, 
-  output reg ctxt_valid
+  output reg ctxt_valid,
+  output err_invalid_ptxt_char
 );
 
+  localparam NUL_CHAR = 8'h00;
+    
+  localparam UPPERCASE_A_CHAR = 8'h41;
+  localparam UPPERCASE_Z_CHAR = 8'h5A;
+  localparam LOWERCASE_A_CHAR = 8'h61;
+  localparam LOWERCASE_Z_CHAR = 8'h7A;
+  localparam DIGIT_0_CHAR = 8'h30;
+  localparam DIGIT_9_CHAR = 8'h39;
+
+  wire is_uppercase_char;
+  wire is_lowercase_char;
+  wire is_digit_char;
+
+  assign is_uppercase_char =  (ptxt_char >= UPPERCASE_A_CHAR) &&
+                              (ptxt_char <= UPPERCASE_Z_CHAR);
+
+  assign is_lowercase_char =  (ptxt_char >= LOWERCASE_A_CHAR) &&
+                              (ptxt_char <= LOWERCASE_Z_CHAR);
+
+  assign is_digit_char =  (ptxt_char >= DIGIT_0_CHAR) &&
+                              (ptxt_char <= DIGIT_9_CHAR);
+
+  assign err_invalid_ptxt_char = !(is_digit_char || is_uppercase_char || is_lowercase_char);
+
   always @(*) begin
-    // row 15:8 column 7:0
-	ctxt_valid = 1;
-	case(ptxt_char)
-    (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
-		(8'd98) : ctxt_str = {rot_table[0],rot_table[7]}; 
-		(8'd99) : ctxt_str = {rot_table[0],rot_table[8]}; 
-		(8'd100) : ctxt_str = {rot_table[0],rot_table[9]}; 
-		(8'd101) : ctxt_str = {rot_table[0],rot_table[10]}; 
-		(8'd102) : ctxt_str = {rot_table[0],rot_table[11]}; 
-		(8'd103) : ctxt_str = {rot_table[1],rot_table[6]}; 
-		(8'd104) : ctxt_str = {rot_table[1],rot_table[7]}; 
-		(8'd105) : ctxt_str = {rot_table[1],rot_table[8]}; 
-		(8'd106) : ctxt_str = {rot_table[1],rot_table[9]}; 
-		(8'd107) : ctxt_str = {rot_table[1],rot_table[10]}; 
-		(8'd108) : ctxt_str = {rot_table[1],rot_table[11]}; 
-		(8'd109) : ctxt_str = {rot_table[2],rot_table[6]}; 
-		(8'd110) : ctxt_str = {rot_table[2],rot_table[7]}; 
-		(8'd111) : ctxt_str = {rot_table[2],rot_table[8]}; 
-		(8'd112) : ctxt_str = {rot_table[2],rot_table[9]}; 
-		(8'd113) : ctxt_str = {rot_table[2],rot_table[10]}; 
-		(8'd114) : ctxt_str = {rot_table[2],rot_table[11]}; 
-		(8'd115) : ctxt_str = {rot_table[3],rot_table[6]}; 
-		(8'd116) : ctxt_str = {rot_table[3],rot_table[7]}; 
-		(8'd117) : ctxt_str = {rot_table[3],rot_table[8]}; 
-		(8'd118) : ctxt_str = {rot_table[3],rot_table[9]}; 
-		(8'd119) : ctxt_str = {rot_table[3],rot_table[10]}; 
-		(8'd120) : ctxt_str = {rot_table[3],rot_table[11]}; 
-		(8'd121) : ctxt_str = {rot_table[4],rot_table[6]}; 
-		(8'd122) : ctxt_str = {rot_table[4],rot_table[7]}; 
-		(8'd65) : ctxt_str = {rot_table[0],rot_table[6]}; 
-		(8'd66) : ctxt_str = {rot_table[0],rot_table[7]}; 
-		(8'd67) : ctxt_str = {rot_table[0],rot_table[8]}; 
-		(8'd68) : ctxt_str = {rot_table[0],rot_table[9]}; 
-		(8'd69) : ctxt_str = {rot_table[0],rot_table[10]}; 
-		(8'd70) : ctxt_str = {rot_table[0],rot_table[11]}; 
-		(8'd71) : ctxt_str = {rot_table[1],rot_table[6]}; 
-		(8'd72) : ctxt_str = {rot_table[1],rot_table[7]}; 
-		(8'd73) : ctxt_str = {rot_table[1],rot_table[8]}; 
-		(8'd74) : ctxt_str = {rot_table[1],rot_table[9]}; 
-		(8'd75) : ctxt_str = {rot_table[1],rot_table[10]}; 
-		(8'd76) : ctxt_str = {rot_table[1],rot_table[11]}; 
-		(8'd77) : ctxt_str = {rot_table[2],rot_table[6]}; 
-		(8'd78) : ctxt_str = {rot_table[2],rot_table[7]}; 
-		(8'd79) : ctxt_str = {rot_table[2],rot_table[8]}; 
-		(8'd80) : ctxt_str = {rot_table[2],rot_table[9]}; 
-		(8'd81) : ctxt_str = {rot_table[2],rot_table[10]}; 
-		(8'd82) : ctxt_str = {rot_table[2],rot_table[11]}; 
-		(8'd83) : ctxt_str = {rot_table[3],rot_table[6]}; 
-		(8'd84) : ctxt_str = {rot_table[3],rot_table[7]}; 
-		(8'd85) : ctxt_str = {rot_table[3],rot_table[8]}; 
-		(8'd86) : ctxt_str = {rot_table[3],rot_table[9]}; 
-		(8'd87) : ctxt_str = {rot_table[3],rot_table[10]}; 
-		(8'd88) : ctxt_str = {rot_table[3],rot_table[11]}; 
-		(8'd89) : ctxt_str = {rot_table[4],rot_table[6]}; 
-		(8'd90) : ctxt_str = {rot_table[4],rot_table[7]}; 
-		(8'd48) : ctxt_str = {rot_table[4],rot_table[8]}; 
-		(8'd49) : ctxt_str = {rot_table[4],rot_table[9]}; 
-		(8'd50) : ctxt_str = {rot_table[4],rot_table[10]}; 
-		(8'd51) : ctxt_str = {rot_table[4],rot_table[11]}; 
-		(8'd52) : ctxt_str = {rot_table[5],rot_table[6]}; 
-		(8'd53) : ctxt_str = {rot_table[5],rot_table[7]}; 
-		(8'd54) : ctxt_str = {rot_table[5],rot_table[8]}; 
-		(8'd55) : ctxt_str = {rot_table[5],rot_table[9]}; 
-		(8'd56) : ctxt_str = {rot_table[5],rot_table[10]}; 
-		(8'd57) : ctxt_str = {rot_table[5],rot_table[11]};
-		default: begin
-			ctxt_str = {2{8'h00}};
-			ctxt_valid = 0;
-		end
-    endcase
+    ctxt_valid = 0;
+    if(!err_invalid_ptxt_char && ptxt_valid && is_key_installed) begin
+      ctxt_valid = 1;
+      // row 15:8 column 7:0
+      case(ptxt_char)
+        // lowercase characters
+        (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
+        (8'd98) : ctxt_str = {rot_table[0],rot_table[7]}; 
+        (8'd99) : ctxt_str = {rot_table[0],rot_table[8]}; 
+        (8'd100) : ctxt_str = {rot_table[0],rot_table[9]}; 
+        (8'd101) : ctxt_str = {rot_table[0],rot_table[10]}; 
+        (8'd102) : ctxt_str = {rot_table[0],rot_table[11]}; 
+        (8'd103) : ctxt_str = {rot_table[1],rot_table[6]}; 
+        (8'd104) : ctxt_str = {rot_table[1],rot_table[7]}; 
+        (8'd105) : ctxt_str = {rot_table[1],rot_table[8]}; 
+        (8'd106) : ctxt_str = {rot_table[1],rot_table[9]}; 
+        (8'd107) : ctxt_str = {rot_table[1],rot_table[10]}; 
+        (8'd108) : ctxt_str = {rot_table[1],rot_table[11]}; 
+        (8'd109) : ctxt_str = {rot_table[2],rot_table[6]}; 
+        (8'd110) : ctxt_str = {rot_table[2],rot_table[7]}; 
+        (8'd111) : ctxt_str = {rot_table[2],rot_table[8]}; 
+        (8'd112) : ctxt_str = {rot_table[2],rot_table[9]}; 
+        (8'd113) : ctxt_str = {rot_table[2],rot_table[10]}; 
+        (8'd114) : ctxt_str = {rot_table[2],rot_table[11]}; 
+        (8'd115) : ctxt_str = {rot_table[3],rot_table[6]}; 
+        (8'd116) : ctxt_str = {rot_table[3],rot_table[7]}; 
+        (8'd117) : ctxt_str = {rot_table[3],rot_table[8]}; 
+        (8'd118) : ctxt_str = {rot_table[3],rot_table[9]}; 
+        (8'd119) : ctxt_str = {rot_table[3],rot_table[10]}; 
+        (8'd120) : ctxt_str = {rot_table[3],rot_table[11]}; 
+        (8'd121) : ctxt_str = {rot_table[4],rot_table[6]}; 
+        (8'd122) : ctxt_str = {rot_table[4],rot_table[7]};
+        // uppercase characters 
+        (8'd65) : ctxt_str = {rot_table[0],rot_table[6]}; 
+        (8'd66) : ctxt_str = {rot_table[0],rot_table[7]}; 
+        (8'd67) : ctxt_str = {rot_table[0],rot_table[8]}; 
+        (8'd68) : ctxt_str = {rot_table[0],rot_table[9]}; 
+        (8'd69) : ctxt_str = {rot_table[0],rot_table[10]}; 
+        (8'd70) : ctxt_str = {rot_table[0],rot_table[11]}; 
+        (8'd71) : ctxt_str = {rot_table[1],rot_table[6]}; 
+        (8'd72) : ctxt_str = {rot_table[1],rot_table[7]}; 
+        (8'd73) : ctxt_str = {rot_table[1],rot_table[8]}; 
+        (8'd74) : ctxt_str = {rot_table[1],rot_table[9]}; 
+        (8'd75) : ctxt_str = {rot_table[1],rot_table[10]}; 
+        (8'd76) : ctxt_str = {rot_table[1],rot_table[11]}; 
+        (8'd77) : ctxt_str = {rot_table[2],rot_table[6]}; 
+        (8'd78) : ctxt_str = {rot_table[2],rot_table[7]}; 
+        (8'd79) : ctxt_str = {rot_table[2],rot_table[8]}; 
+        (8'd80) : ctxt_str = {rot_table[2],rot_table[9]}; 
+        (8'd81) : ctxt_str = {rot_table[2],rot_table[10]}; 
+        (8'd82) : ctxt_str = {rot_table[2],rot_table[11]}; 
+        (8'd83) : ctxt_str = {rot_table[3],rot_table[6]}; 
+        (8'd84) : ctxt_str = {rot_table[3],rot_table[7]}; 
+        (8'd85) : ctxt_str = {rot_table[3],rot_table[8]}; 
+        (8'd86) : ctxt_str = {rot_table[3],rot_table[9]}; 
+        (8'd87) : ctxt_str = {rot_table[3],rot_table[10]}; 
+        (8'd88) : ctxt_str = {rot_table[3],rot_table[11]}; 
+        (8'd89) : ctxt_str = {rot_table[4],rot_table[6]}; 
+        (8'd90) : ctxt_str = {rot_table[4],rot_table[7]};
+        // digit characters 
+        (8'd48) : ctxt_str = {rot_table[4],rot_table[8]}; 
+        (8'd49) : ctxt_str = {rot_table[4],rot_table[9]}; 
+        (8'd50) : ctxt_str = {rot_table[4],rot_table[10]}; 
+        (8'd51) : ctxt_str = {rot_table[4],rot_table[11]}; 
+        (8'd52) : ctxt_str = {rot_table[5],rot_table[6]}; 
+        (8'd53) : ctxt_str = {rot_table[5],rot_table[7]}; 
+        (8'd54) : ctxt_str = {rot_table[5],rot_table[8]}; 
+        (8'd55) : ctxt_str = {rot_table[5],rot_table[9]}; 
+        (8'd56) : ctxt_str = {rot_table[5],rot_table[10]}; 
+        (8'd57) : ctxt_str = {rot_table[5],rot_table[11]};
+        default: begin
+          ctxt_str = {2{8'h00}};
+          ctxt_valid = 0;
+        end
+      endcase
+    end else begin
+      ctxt_valid = 0;
+      ctxt_str = {2{8'h00}};
+    end
   end
 endmodule
