@@ -2,13 +2,13 @@ module rst_cipher(
    input clk
   ,input rst_n
   ,input ptxt_valid
-  ,input [0:11][7:0] key
+  ,input [11:0][7:0] key
   ,input [7:0] ptxt_char
   ,output [15:0] ctxt_str
   ,output ctxt_ready
 );
 
-  wire [0:11][7:0] rot_table;
+  wire [11:0][7:0] rot_table;
   wire key_valid;
   
   check_key check(
@@ -51,36 +51,60 @@ module rot_table (
   ,input rst_n
   ,input key_valid
   ,input ctxt_valid
-  ,input [0:11][7:0] key  // 12 bytes ([7:0]) indexed as 0 to 11
+  ,input [11:0][7:0] key  // 12 bytes ([7:0]) indexed as 0 to 11
   /* other ports (if any) ... */
-  ,output reg [0:11][7:0] rot_table
+  ,output reg [11:0][7:0] rot_table
 );
 
-  //reg [0:11][7:0] rot_table;
+  reg [7:0] temp_row;
+  reg [7:0] temp_column;
+  reg is_table_initialized;
 
   always @ (posedge clk or negedge rst_n) 
-    if(!rst_n)
+    if(!rst_n) begin
       rot_table <= {12{8'd0}};
-    else if(key_valid) begin
-       /* perform "initialization" */
-       // rows
-       rot_table[0] <= key[0];
-       rot_table[1] <= key[10];
-       rot_table[2] <= key[2];
-       rot_table[3] <= key[8];
-       rot_table[4] <= key[4];
-       rot_table[5] <= key[6];
-       // columns
-       rot_table[6] <= key[1];
-       rot_table[7] <= key[11];
-       rot_table[8] <= key[3]; 
-       rot_table[9] <= key[9]; 
-       rot_table[10] <= key[5]; 
-       rot_table[10] <= key[7];
-    end
-    else if(ctxt_valid) begin
+      temp_row <= 8'd0;
+      temp_column <= 8'd0;
+      is_table_initialized <= 0;
+    end else if(key_valid && !is_table_initialized) begin
+      /* perform "initialization" */
+      // rows
+      rot_table[0] <= key[11];
+      rot_table[1] <= key[1];
+      rot_table[2] <= key[9];
+      rot_table[3] <= key[3];
+      rot_table[4] <= key[7];
+      rot_table[5] <= key[5];
+      // columns
+      rot_table[6] <= key[10];
+      rot_table[7] <= key[0]; 
+      rot_table[8] <= key[8]; 
+      rot_table[9] <= key[2]; 
+      rot_table[10] <= key[6]; 
+      rot_table[11] <= key[4];
+
+      temp_row <= key[5];
+      temp_column <= key[4];
+      is_table_initialized <= 1;
+    end else if(ctxt_valid) begin
       /* perform rotation */
-		rot_table <= {12{8'd0}};
+		  // rows
+      rot_table[0] <= temp_row;
+      rot_table[1] <= rot_table[0];
+      rot_table[2] <= rot_table[1];
+      rot_table[3] <= rot_table[2];
+      rot_table[4] <= rot_table[3];
+      rot_table[5] <= rot_table[4];
+      // columns
+      rot_table[6] <=  temp_column;
+      rot_table[7] <=  rot_table[6]; 
+      rot_table[8] <=  rot_table[7]; 
+      rot_table[9] <=  rot_table[8]; 
+      rot_table[10] <= rot_table[9]; 
+      rot_table[11] <= rot_table[10];
+      
+      temp_row <= rot_table[4];
+      temp_column <= rot_table[10];
     end
 endmodule
 
@@ -249,7 +273,7 @@ endmodule
 // controlli su plaintext?
 module substitution_law(
   input [7:0] ptxt_char,
-  input [0:11][7:0] rot_table,
+  input [11:0][7:0] rot_table,
   input ptxt_valid,
   output reg [15:0] ctxt_str, 
   output reg ctxt_valid
@@ -259,7 +283,7 @@ module substitution_law(
     // row 15:8 column 7:0
 	ctxt_valid = 1;
 	case(ptxt_char)
-      (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
+    (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
 		(8'd98) : ctxt_str = {rot_table[0],rot_table[7]}; 
 		(8'd99) : ctxt_str = {rot_table[0],rot_table[8]}; 
 		(8'd100) : ctxt_str = {rot_table[0],rot_table[9]}; 
