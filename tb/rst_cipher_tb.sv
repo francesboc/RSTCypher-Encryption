@@ -1,6 +1,3 @@
-// -----------------------------------------------------------------------------
-// Testbench of Caesar's cipher module for debug and corner cases check
-// -----------------------------------------------------------------------------
 module rst_cipher_tb;
 
   reg clk = 1'b0;
@@ -14,14 +11,14 @@ module rst_cipher_tb;
     -> reset_deassertion;
   end
   
-  reg   [11:0][7:0]            key_char;
+  reg   [11:0][7:0]       key_char;
   reg   [7:0]             ptxt_char;
   reg                     ptxt_valid;
   reg   [15:0]            ctxt_char;
   reg                     ctxt_ready;
   reg                     err_invalid_key;
   reg                     err_key_not_installed;
-  reg                     err_invalid_ptx_char;
+  reg                     err_invalid_ptxt_char;
 
   rst_cipher rst_cipher (
      .clk                       (clk)
@@ -52,7 +49,7 @@ module rst_cipher_tb;
   
   reg char_is_letter = 0; 
   reg char_is_digit = 0;
-  reg [6:0][6:0][7:0] rot_table = {49{NUL_CHAR}};
+  //reg [6:0][6:0][7:0] rot_table = {49{NUL_CHAR}};
   //reg [6:0][6:0][7:0] aux_table = {49{NUL_CHAR}};
   reg is_table_initialized = 0;
   
@@ -61,106 +58,126 @@ module rst_cipher_tb;
   integer word_counter = 0;
   integer digit_counter = 0;
   reg [7:0] temp_row;
-  reg [7:0] temp_line;
+  reg [7:0] temp_column;
 
-  /*task expected_ctxt(
-    output [15:0] exp_char
+  reg [11:0][7:0] rot_table = {12{NUL_CHAR}};
+
+  task rot_table_task(
+    output [11:0][7:0] rot_table 
   );
-    ctxt_ready = 0;
-    if(is_table_initialized && ptxt_valid)begin
-      err_invalid_ptx_char = 0;
-      char_is_letter = ((ptxt_char >= UPPERCASE_A_CHAR) && (ptxt_char <= UPPERCASE_Z_CHAR) ||  
-                                (ptxt_char >= LOWERCASE_A_CHAR) && (ptxt_char <= LOWERCASE_Z_CHAR));
-      char_is_digit = (ptxt_char >= DIGIT_0_CHAR) && (ptxt_char <= DIGIT_9_CHAR);
-      err_invalid_ptx_char = !(char_is_letter || char_is_digit);
 
-      if(!err_invalid_ptx_char)begin
-        // substitution
-        for (int r=1; r<7; r=r+1 ) begin
-          for (int c=1; c <7; c=c+1) begin
-            if( rot_table[r][c] == ptxt_char || rot_table[r][c] == (ptxt_char + 8'd32) ) begin
-              exp_char[15:8]  = rot_table[r][0];
-              exp_char[7:0]   = rot_table[0][c];
-            end
-          end
-        end
-        // rotation
-        temp_row = rot_table[0][6];
-        temp_line = rot_table[6][0];
-        for (int i=6; i>=2; i=i-1 ) begin 
-          rot_table[0][i] = rot_table[0][i-1];
-          rot_table[i][0] = rot_table[i-1][0];
-        end
-        rot_table[0][1] = temp_row;
-        rot_table[1][0] = temp_line;
-      end else begin
-        exp_char[15:8]  = NUL_CHAR;
-        exp_char[7:0]   = NUL_CHAR;
-      end
+    if(!is_table_initialized) begin
+        rot_table[0] = key_char[11];
+        rot_table[1] = key_char[1];
+        rot_table[2] = key_char[9];
+        rot_table[3] = key_char[3];
+        rot_table[4] = key_char[7];
+        rot_table[5] = key_char[5];
+        // columns
+        rot_table[6] = key_char[10];
+        rot_table[7] = key_char[0]; 
+        rot_table[8] = key_char[8]; 
+        rot_table[9] = key_char[2]; 
+        rot_table[10] = key_char[6]; 
+        rot_table[11] = key_char[4];
+
+        is_table_initialized = 1;
     end else begin
-      exp_char[15:8]  = NUL_CHAR;
-      exp_char[7:0]   = NUL_CHAR;
+        temp_row = rot_table[5];
+        temp_column = rot_table[11];
+
+        rot_table[5] = rot_table[4];
+        rot_table[4] = rot_table[3];
+        rot_table[3] = rot_table[2];
+        rot_table[2] = rot_table[1];
+        rot_table[1] = rot_table[0];
+        rot_table[0] = temp_row;
+        // columns
+        rot_table[11] = rot_table[10];
+        rot_table[10] = rot_table[9];
+        rot_table[9] =  rot_table[8];
+        rot_table[8] =  rot_table[7];
+        rot_table[7] =  rot_table[6];
+        rot_table[6] =  temp_column;
     end
   endtask
-  
-  
-  task initialize_aux_table (
-     output [6:0][6:0][7:0] rot_table
-  );
-    if (!is_table_initialized) begin
-      //check presence of repeated or invalid characters in the key
-      // (i*8)+7:i*8 = i*8 +: 8
-      err_repeated_char = 0;
-      err_invalid_key = 0;
-      
-      for(int i=0; i<12; i=i+1) begin
-        char_is_letter = ((key_char[i*8 +: 8] >= UPPERCASE_A_CHAR) && (key_char[i*8 +: 8] <= UPPERCASE_Z_CHAR) ||  
-                                (key_char[i*8 +: 8] >= LOWERCASE_A_CHAR) && (key_char[i*8 +: 8] <= LOWERCASE_Z_CHAR));
-        char_is_digit = (key_char[i*8 +: 8] >= DIGIT_0_CHAR) && (key_char[i*8 +: 8] <= DIGIT_9_CHAR);
-        err_invalid_key = err_invalid_key || !(char_is_letter || char_is_digit); 
-        for(int j = 0; j< 12; j=j+1) begin
-          if(i!=j) err_repeated_char = err_repeated_char || (key_char[i*8 +: 8] == key_char[j*8 +: 8]);
-        end   
-        if(err_repeated_char || err_invalid_key) break;
-      end
-      
-      if(!(err_repeated_char || err_invalid_key)) begin
-        is_table_initialized=1'b1;
-        //rows
-        rot_table[1][0] = key_char[95:88];   // s[0] = k[0] = a
-        rot_table[2][0] = key_char[15:8]; // s[10] = k[10] = k
-        rot_table[3][0] = key_char[79:72]; // s[2] = k[2] = c
-        rot_table[4][0] = key_char[31:24]; // s[8] = k[8] = i
-        rot_table[5][0] = key_char[63:56]; // s[4] = k[4] = e
-        rot_table[6][0] = key_char[47:40]; // s[6] = k[6] = g
-        //columns
-        rot_table[0][1] = key_char[87:80];  // s[1] = k[1] = b
-        rot_table[0][2] = key_char[7:0]; // s[11] = k[11] = l
-        rot_table[0][3] = key_char[71:64]; // s[3] = k[3] = d
-        rot_table[0][4] = key_char[23:16]; // s[9] = k[9] = j
-        rot_table[0][5] = key_char[55:48]; // s[5] = k[5] = f
-        rot_table[0][6] = key_char[39:32]; // s[7] = k[7] = h
-      end
-      
-      temp_row = rot_table[0][6];
-      temp_line = rot_table[6][0];
 
-      digit_counter = 0;
-      word_counter = 0;
-      for (int k = 1; k<7; k=k+1) begin
-        for (int l = 1; l<7; l=l+1) begin
-          if( (k>4 && l>2) || k>5 ) begin
-            rot_table[k][l] = DIGIT_0_CHAR + digit_counter;
-            digit_counter = digit_counter + 1;
-          end else begin
-            rot_table[k][l] = LOWERCASE_A_CHAR + word_counter;
-            word_counter = word_counter + 1;
-          end
+  task substitution_task(
+    output [15:0] ctxt_str
+  );
+    case(ptxt_char)
+        // lowercase characters
+        (8'd97) : ctxt_str = {rot_table[0],rot_table[6]}; 
+        (8'd98) : ctxt_str = {rot_table[0],rot_table[7]}; 
+        (8'd99) : ctxt_str = {rot_table[0],rot_table[8]}; 
+        (8'd100) : ctxt_str = {rot_table[0],rot_table[9]}; 
+        (8'd101) : ctxt_str = {rot_table[0],rot_table[10]}; 
+        (8'd102) : ctxt_str = {rot_table[0],rot_table[11]}; 
+        (8'd103) : ctxt_str = {rot_table[1],rot_table[6]}; 
+        (8'd104) : ctxt_str = {rot_table[1],rot_table[7]}; 
+        (8'd105) : ctxt_str = {rot_table[1],rot_table[8]}; 
+        (8'd106) : ctxt_str = {rot_table[1],rot_table[9]}; 
+        (8'd107) : ctxt_str = {rot_table[1],rot_table[10]}; 
+        (8'd108) : ctxt_str = {rot_table[1],rot_table[11]}; 
+        (8'd109) : ctxt_str = {rot_table[2],rot_table[6]}; 
+        (8'd110) : ctxt_str = {rot_table[2],rot_table[7]}; 
+        (8'd111) : ctxt_str = {rot_table[2],rot_table[8]}; 
+        (8'd112) : ctxt_str = {rot_table[2],rot_table[9]}; 
+        (8'd113) : ctxt_str = {rot_table[2],rot_table[10]}; 
+        (8'd114) : ctxt_str = {rot_table[2],rot_table[11]}; 
+        (8'd115) : ctxt_str = {rot_table[3],rot_table[6]}; 
+        (8'd116) : ctxt_str = {rot_table[3],rot_table[7]}; 
+        (8'd117) : ctxt_str = {rot_table[3],rot_table[8]}; 
+        (8'd118) : ctxt_str = {rot_table[3],rot_table[9]}; 
+        (8'd119) : ctxt_str = {rot_table[3],rot_table[10]}; 
+        (8'd120) : ctxt_str = {rot_table[3],rot_table[11]}; 
+        (8'd121) : ctxt_str = {rot_table[4],rot_table[6]}; 
+        (8'd122) : ctxt_str = {rot_table[4],rot_table[7]};
+        // uppercase characters 
+        (8'd65) : ctxt_str = {rot_table[0],rot_table[6]}; 
+        (8'd66) : ctxt_str = {rot_table[0],rot_table[7]}; 
+        (8'd67) : ctxt_str = {rot_table[0],rot_table[8]}; 
+        (8'd68) : ctxt_str = {rot_table[0],rot_table[9]}; 
+        (8'd69) : ctxt_str = {rot_table[0],rot_table[10]}; 
+        (8'd70) : ctxt_str = {rot_table[0],rot_table[11]}; 
+        (8'd71) : ctxt_str = {rot_table[1],rot_table[6]}; 
+        (8'd72) : ctxt_str = {rot_table[1],rot_table[7]}; 
+        (8'd73) : ctxt_str = {rot_table[1],rot_table[8]}; 
+        (8'd74) : ctxt_str = {rot_table[1],rot_table[9]}; 
+        (8'd75) : ctxt_str = {rot_table[1],rot_table[10]}; 
+        (8'd76) : ctxt_str = {rot_table[1],rot_table[11]}; 
+        (8'd77) : ctxt_str = {rot_table[2],rot_table[6]}; 
+        (8'd78) : ctxt_str = {rot_table[2],rot_table[7]}; 
+        (8'd79) : ctxt_str = {rot_table[2],rot_table[8]}; 
+        (8'd80) : ctxt_str = {rot_table[2],rot_table[9]}; 
+        (8'd81) : ctxt_str = {rot_table[2],rot_table[10]}; 
+        (8'd82) : ctxt_str = {rot_table[2],rot_table[11]}; 
+        (8'd83) : ctxt_str = {rot_table[3],rot_table[6]}; 
+        (8'd84) : ctxt_str = {rot_table[3],rot_table[7]}; 
+        (8'd85) : ctxt_str = {rot_table[3],rot_table[8]}; 
+        (8'd86) : ctxt_str = {rot_table[3],rot_table[9]}; 
+        (8'd87) : ctxt_str = {rot_table[3],rot_table[10]}; 
+        (8'd88) : ctxt_str = {rot_table[3],rot_table[11]}; 
+        (8'd89) : ctxt_str = {rot_table[4],rot_table[6]}; 
+        (8'd90) : ctxt_str = {rot_table[4],rot_table[7]};
+        // digit characters 
+        (8'd48) : ctxt_str = {rot_table[4],rot_table[8]}; 
+        (8'd49) : ctxt_str = {rot_table[4],rot_table[9]}; 
+        (8'd50) : ctxt_str = {rot_table[4],rot_table[10]}; 
+        (8'd51) : ctxt_str = {rot_table[4],rot_table[11]}; 
+        (8'd52) : ctxt_str = {rot_table[5],rot_table[6]}; 
+        (8'd53) : ctxt_str = {rot_table[5],rot_table[7]}; 
+        (8'd54) : ctxt_str = {rot_table[5],rot_table[8]}; 
+        (8'd55) : ctxt_str = {rot_table[5],rot_table[9]}; 
+        (8'd56) : ctxt_str = {rot_table[5],rot_table[10]}; 
+        (8'd57) : ctxt_str = {rot_table[5],rot_table[11]};
+        default: begin
+          ctxt_str = {2{8'h00}};
         end
-      end
-    end  
+      endcase
+
   endtask
-*/
+
   initial begin
     @(reset_deassertion);
     @(posedge clk);
@@ -197,6 +214,27 @@ module rst_cipher_tb;
       ptxt_char = "0";
       key_char = "abcdefghijkl";
     end: TEST_KEY_NOT_INSTALLED
+
+    begin: TEST_1
+
+      rst_n = 0;
+      @(posedge clk);
+      rst_n = 1;
+      key_char = "abcdefghijkl";
+      @(posedge clk);
+      rot_table_task(rot_table);
+      ptxt_valid = 1;
+      ptxt_char = "A";
+      substitution_task(EXPECTED_GEN);
+      @(posedge clk);
+      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
+      @(posedge clk);
+      rot_table_task(rot_table);
+      @(posedge clk);
+      @(posedge clk);
+
+
+    end: TEST_1
     /*
     begin: TEST_WRONG_KEY
       rst_n = 0;
