@@ -11,14 +11,14 @@ module rst_cipher_tb;
     -> reset_deassertion;
   end
   
-  reg   [11:0][7:0]       key_char;
-  reg   [7:0]             ptxt_char;
-  reg                     ptxt_valid;
-  reg   [15:0]            ctxt_char;
-  reg                     ctxt_ready;
-  reg                     err_invalid_key;
-  reg                     err_key_not_installed;
-  reg                     err_invalid_ptxt_char;
+  reg   [11:0][7:0]  key_char;
+  reg   [7:0]        ptxt_char;
+  reg                ptxt_valid;
+  wire  [15:0]       ctxt_char;
+  reg                ctxt_ready;
+  reg                err_invalid_key;
+  reg                err_key_not_installed;
+  reg                err_invalid_ptxt_char;
 
   rst_cipher rst_cipher (
      .clk                       (clk)
@@ -27,9 +27,8 @@ module rst_cipher_tb;
     ,.key                       (key_char)
     ,.ptxt_char                 (ptxt_char)
     ,.ctxt_str                  (ctxt_char)
-    //,.err_invalid_key           (err_invalid_key)
-    ,.err_invalid_ptxt_char     (err_invalid_ptx_char)
-    //,.err_key_not_installed     (err_key_not_installed)
+    ,.err_invalid_key           (/* Unconnected */)
+    ,.err_invalid_ptxt_char     (/* Unconnected */)
     ,.ctxt_ready                (ctxt_ready)
   );
 
@@ -37,6 +36,9 @@ module rst_cipher_tb;
   reg [15:0] EXPECTED_CHECK;
   reg [15:0] EXPECTED_QUEUE[$];
   
+  reg [7:0] EXPECTED_CHAR;
+  reg [7:0] EXPECTED_CHAR_QUEUE[$];
+
   localparam NUL_CHAR = 8'h00;
   
   localparam UPPERCASE_A_CHAR = 8'h41;
@@ -183,7 +185,7 @@ module rst_cipher_tb;
     @(posedge clk);
     //is_table_initialized = 0;
    
-    begin: TEST_KEY_NOT_INSTALLED
+    /*begin: TEST_KEY_NOT_INSTALLED
       // TEST OK
       $display("--> 1 %s %d ",ctxt_char, ctxt_ready);
       key_char = "abcdefghijkl";
@@ -213,28 +215,112 @@ module rst_cipher_tb;
       ptxt_valid = 1;
       ptxt_char = "0";
       key_char = "abcdefghijkl";
+      $display("END_TEST");
     end: TEST_KEY_NOT_INSTALLED
 
-    begin: TEST_1
+    @(posedge clk);
+    rst_n = 0;
+    is_table_initialized = 0;
+    key_char = {12{NUL_CHAR}};
+    @(posedge clk);*/
+    key_char = "abcdefghijkl";
+    rot_table_task(rot_table);
+    @(posedge clk);
+    fork
+      begin: TEST_WORKFLOW
+        for(int i = 0; i < 26; i++) begin
+          ptxt_valid = 1;
+          ptxt_char = "A" + i;
+          substitution_task(EXPECTED_GEN);
+          EXPECTED_QUEUE.push_back(EXPECTED_GEN);
+          EXPECTED_CHAR_QUEUE.push_back(ptxt_char);
+          @(posedge clk);
+          rot_table_task(rot_table);  
+        end
 
-      rst_n = 0;
+        for(int i = 0; i < 26; i++) begin
+          ptxt_valid = 1;
+          ptxt_char = "a" + i;
+          substitution_task(EXPECTED_GEN);
+          EXPECTED_QUEUE.push_back(EXPECTED_GEN);  
+          EXPECTED_CHAR_QUEUE.push_back(ptxt_char);
+          @(posedge clk);
+          rot_table_task(rot_table);
+        end
+
+        for(int i = 0; i < 10; i++) begin
+          ptxt_valid = 1;
+          ptxt_char = "0" + i;
+          substitution_task(EXPECTED_GEN);
+          EXPECTED_QUEUE.push_back(EXPECTED_GEN);  
+          EXPECTED_CHAR_QUEUE.push_back(ptxt_char);
+          @(posedge clk);
+          rot_table_task(rot_table);
+        end
+      end: TEST_WORKFLOW
+
+      begin: TEST_WORKFLOW_CHECK
+        //@(posedge clk);
+        for(int i = 0; i < 62; i++) begin
+          @(posedge clk);
+          EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
+          EXPECTED_CHAR = EXPECTED_CHAR_QUEUE.pop_front();
+          $display("%s %d %s %s %-5s",EXPECTED_CHAR, i, ctxt_char, EXPECTED_CHECK, EXPECTED_CHECK === ctxt_char ? "OK" : "ERROR");
+          if(EXPECTED_CHECK !== ctxt_char) $stop;
+        end
+      end: TEST_WORKFLOW_CHECK
+
+    join
+
+    @(posedge clk);
+    rst_n = 0;
+    is_table_initialized = 0;
+    key_char = {12{NUL_CHAR}};
+    @(posedge clk);
+    rst_n = 1;
+    key_char = "ABCDEFGHIJKL";
+    @(posedge clk);
+
+    begin: HELLO_EXAMPLE
+      ptxt_valid = 1;
+      ptxt_char = "H";
       @(posedge clk);
+      $display("%s %s", ctxt_char, "KL" === ctxt_char ? "OK" : "ERROR");
+      ptxt_valid = 1;
+      ptxt_char = "e";
+      @(posedge clk);
+      $display("%s %s", ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
+      ptxt_valid = 1;
+      ptxt_char = "l";
+      @(posedge clk);
+      $display("%s %s", ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
+      ptxt_valid = 1;
+      ptxt_char = "l";
+      @(posedge clk);
+      $display("%s %s", ctxt_char, "ED" === ctxt_char ? "OK" : "ERROR");
+      ptxt_valid = 1;
+      ptxt_char = "o";
+      @(posedge clk);
+      $display("%s %s", ctxt_char, "EF" === ctxt_char ? "OK" : "ERROR");
+    end: HELLO_EXAMPLE
+     /* @(posedge clk);
       rst_n = 1;
       key_char = "abcdefghijkl";
+
       @(posedge clk);
       rot_table_task(rot_table);
-      ptxt_valid = 1;
-      ptxt_char = "A";
+
       substitution_task(EXPECTED_GEN);
+      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
       @(posedge clk);
       $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
       @(posedge clk);
       rot_table_task(rot_table);
+      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
       @(posedge clk);
-      @(posedge clk);
-
-
-    end: TEST_1
+      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
+      @(posedge clk);*/
+    
     /*
     begin: TEST_WRONG_KEY
       rst_n = 0;

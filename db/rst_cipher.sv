@@ -12,7 +12,8 @@ module rst_cipher(
 
   wire [11:0][7:0] rot_table;
   wire key_valid;
-  
+  wire is_key_installed;
+
   check_key check(
     .c0(key[0]),
     .c1(key[1]),
@@ -29,7 +30,7 @@ module rst_cipher(
     .is_valid(key_valid)
   );
 	
-  assign err_invalid_key = key_valid;
+  assign err_invalid_key = key_valid ? 0 : 1;
 
   rot_table ROT_TABLE(
     .clk(clk),
@@ -37,14 +38,15 @@ module rst_cipher(
     .key_valid(key_valid),
     .ctxt_valid(ctxt_ready), //feedback wire
     .key(key),
-    .rot_table(rot_table)
+    .rot_table(rot_table),
+    .is_table_initialized(is_key_installed)
   );
 
   substitution_law SUB_LAW(
     .ptxt_char(ptxt_char),
     .ptxt_valid(ptxt_valid),
     .rot_table(rot_table),
-    .is_key_installed(key_valid),
+    .is_key_installed(is_key_installed),
     .ctxt_str(ctxt_str),
     .ctxt_valid(ctxt_ready),
     .err_invalid_ptxt_char(err_invalid_ptxt_char)
@@ -60,11 +62,11 @@ module rot_table (
   ,input [11:0][7:0] key  // 12 bytes ([7:0]) indexed as 0 to 11
   /* other ports (if any) ... */
   ,output reg [11:0][7:0] rot_table
+  ,output reg is_table_initialized
 );
 
   reg [7:0] temp_row;
   reg [7:0] temp_column;
-  reg is_table_initialized;
 
   always @ (posedge clk or negedge rst_n) 
     if(!rst_n) begin
