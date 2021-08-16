@@ -27,8 +27,8 @@ module rst_cipher_tb;
     ,.key                       (key_char)
     ,.ptxt_char                 (ptxt_char)
     ,.ctxt_str                  (ctxt_char)
-    ,.err_invalid_key           (/* Unconnected */)
-    ,.err_invalid_ptxt_char     (/* Unconnected */)
+    ,.err_invalid_key           (err_invalid_key)
+    ,.err_invalid_ptxt_char     (err_invalid_ptxt_char)
     ,.ctxt_ready                (ctxt_ready)
   );
 
@@ -183,49 +183,11 @@ module rst_cipher_tb;
   initial begin
     @(reset_deassertion);
     @(posedge clk);
-    //is_table_initialized = 0;
-   
-    /*begin: TEST_KEY_NOT_INSTALLED
-      // TEST OK
-      $display("--> 1 %s %d ",ctxt_char, ctxt_ready);
-      key_char = "abcdefghijkl";
-      @(posedge clk);
-      ptxt_valid = 1;
-      ptxt_char = "a"; //expected ab and rotation
-      @(posedge clk);
-      ptxt_valid = 1;
-      ptxt_char = "-"; //no rotation
-      @(posedge clk);
-      ptxt_valid = 1;
-      ptxt_char = "a"; // expected gh and rotation
-      @(posedge clk);
-      @(posedge clk);
-      rst_n = 0;
-      @(posedge clk);
-      rst_n = 1;
-      ptxt_valid = 1;
-      ptxt_char = "-";
-      @(posedge clk);
-      @(posedge clk);
-      ptxt_valid = 1;
-      ptxt_char = "0";
-      @(posedge clk);
-      key_char = "abcde???ijkl";
-      @(posedge clk);
-      ptxt_valid = 1;
-      ptxt_char = "0";
-      key_char = "abcdefghijkl";
-      $display("END_TEST");
-    end: TEST_KEY_NOT_INSTALLED
 
-    @(posedge clk);
-    rst_n = 0;
-    is_table_initialized = 0;
-    key_char = {12{NUL_CHAR}};
-    @(posedge clk);*/
     key_char = "abcdefghijkl";
     rot_table_task(rot_table);
     @(posedge clk);
+    $display("Start complete workflow test.");
     fork
       begin: TEST_WORKFLOW
         for(int i = 0; i < 26; i++) begin
@@ -260,7 +222,6 @@ module rst_cipher_tb;
       end: TEST_WORKFLOW
 
       begin: TEST_WORKFLOW_CHECK
-        //@(posedge clk);
         for(int i = 0; i < 62; i++) begin
           @(posedge clk);
           EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
@@ -271,7 +232,9 @@ module rst_cipher_tb;
       end: TEST_WORKFLOW_CHECK
 
     join
-
+    $display("Test complete workflow ended.");
+    $display("Start PDF example test.");
+    // cleaning
     @(posedge clk);
     rst_n = 0;
     is_table_initialized = 0;
@@ -303,127 +266,62 @@ module rst_cipher_tb;
       @(posedge clk);
       $display("%s %s", ctxt_char, "EF" === ctxt_char ? "OK" : "ERROR");
     end: HELLO_EXAMPLE
-     /* @(posedge clk);
-      rst_n = 1;
-      key_char = "abcdefghijkl";
+    $display("Test PDF example ended.");
 
-      @(posedge clk);
-      rot_table_task(rot_table);
+    $display("Start corner case test.");
+    // cleaning
+    @(posedge clk);
+    rst_n = 0;
+    is_table_initialized = 0;
+    key_char = {12{NUL_CHAR}};
+    @(posedge clk);
+    rst_n = 1;
+    @(posedge clk);
 
-      substitution_task(EXPECTED_GEN);
-      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
+    begin: TEST_ERROR
+      $display("Testing wrong key.");
+      key_char = "ABC?EFGHIJKL";
+      $display("%d %s", err_invalid_key, 1 === err_invalid_key ? "OK" : "ERROR");
       @(posedge clk);
-      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
+      $display("Testing repeated characters in key.");
+      key_char = "ABCDEFGHDJKL";
+      $display("%d %s", err_invalid_key, 1 === err_invalid_key ? "OK" : "ERROR");
       @(posedge clk);
-      rot_table_task(rot_table);
-      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
-      @(posedge clk);
-      $display(" test_1: %s %s %s", ctxt_char, EXPECTED_GEN, EXPECTED_GEN === ctxt_char ? "OK" : "ERROR");
-      @(posedge clk);*/
-    
-    /*
-    begin: TEST_WRONG_KEY
-      rst_n = 0;
-      @(posedge clk);
-      rst_n = 1;
-      key_char = "abcdefghi?kl";
+      $display("Testing encryption when key is not installed.");
       ptxt_valid = 1;
-      ptxt_char = "b";
-      $display("--> 1 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
+      ptxt_char = "3";
+      $display("%s %d %s", ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
-      key_char = "abcdabcdabcd";
-      ptxt_valid = 1;
-      ptxt_char = "a";
-      $display("--> 2 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-      @(posedge clk);
-      key_char = "abcdefghijkl";
-      ptxt_valid = 1;
-      ptxt_char = "b";
-      $display("--> 3 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-      @(posedge clk);
-      key_char = "abcdefghijkl";
-      ptxt_valid = 1;
-      ptxt_char = "c";
-      $display("--> 4 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-      @(posedge clk);
-      $display("--> 5 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-      @(posedge clk);
-      $display("--> 6 %s %d %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char,err_key_not_installed);
-    end
-
-    /*
-    begin: TEST_INIT_TABLE
-      key_char = "abcdefghijkl";
-      initialize_aux_table(aux_table);
-      for(int i=1; i<7; i++)begin
-        $display("(%d,0) %c", i, aux_table[i][0]);
-      end
-      for(int j=1;j<7;j++)begin
-         $display("(0,%d) %c", j, aux_table[0][j]);
-      end
-    end: TEST_INIT_TABLE
-    */
-    /*
-    begin: TEST_SINGLE_SUB_ROT
-      $display("START TEST %s %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char);
-      key_char = "abcdefghijkl";
+      key_char = "ABCDEFGHIJKL";
+      $display("Testing encryption when plaintext flag is not set.");
       ptxt_valid = 0;
       ptxt_char = NUL_CHAR;
+      $display("%s %d %s", ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
-      for(int i = 0; i < 26; i=i+2) begin
-          ptxt_char = "a" + i;
-          ptxt_valid = 1;
-          @(posedge clk);
-          $display("%s %d %d %d",ctxt_char, ctxt_ready, err_invalid_key, err_invalid_ptx_char);
-      end
-    end: TEST_SINGLE_SUB_ROT*/
-    
-    //reset
-    //posedge
-    
-    /*fork
+      $display("Testing encryption when plaintext is not valid.");
+      ptxt_valid = 1;
+      ptxt_char = "*";
+      $display("%d %s %d %s",err_invalid_ptxt_char, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
+      @(posedge clk);
+      $display("Testing rotation.");
+      ptxt_valid = 1;
+      ptxt_char = "a";
+      @(posedge clk);
+      $display("%c %s %d %s",ptxt_char, ctxt_char, ctxt_ready, 1 === ctxt_ready ? "OK" : "ERROR");
+      $display("Testing rotation when plaintext is not valid. The rot table should not rotate.");
+      ptxt_valid = 1;
+      ptxt_char = "-";
+      @(posedge clk);
+      $display("%c %s %d %s",ptxt_char, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
+      $display("Testing rotation when plaintext is not valid. The rot table should not rotate.");
+      ptxt_valid = 1;
+      ptxt_char = "b";
+      @(posedge clk);
+      $display("%c %s %d %s",ptxt_char, ctxt_char, ctxt_ready, 1 === ctxt_ready ? "OK" : "ERROR");
+      @(posedge clk);
+    end: TEST_ERROR
 
-      begin: TEST_WORK
-        key_char = "abcdefghijkl";
-        initialize_aux_table(rot_table);
-        for(int i =0; i<26; i++) begin
-          ptxt_char = "a" + i;
-          ptxt_valid = 1;
-          @(posedge clk);
-          expected_ctxt(EXPECTED_GEN);
-          EXPECTED_QUEUE.push_back(EXPECTED_GEN);
-        end
-
-        for(int i =0; i<26; i++) begin
-          ptxt_char = "A" + i;
-          ptxt_valid = 1;
-          @(posedge clk);
-          expected_ctxt(EXPECTED_GEN);
-          EXPECTED_QUEUE.push_back(EXPECTED_GEN);
-        end
-
-        for(int i=0; i<10; i++) begin
-          ptxt_char = "0" + i;
-          ptxt_valid = 1;
-          @(posedge clk);
-          expected_ctxt(EXPECTED_GEN);
-          EXPECTED_QUEUE.push_back(EXPECTED_GEN);
-        end
-      end: TEST_WORK
-
-      begin: CHECK_WORK
-        @(posedge clk);
-        EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
-        for(int i = 0; i < 62; i++) begin
-          @(posedge clk);
-          EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
-          $display("loop:%d %s %s %-5s", i, ctxt_char, EXPECTED_CHECK, EXPECTED_CHECK === ctxt_char ? "OK" : "ERROR");
-          if(EXPECTED_CHECK != ctxt_char) $stop;
-        end
-      end: CHECK_WORK
-      
-    join
-*/
+    $display("Corner case test ended.");
     $stop;
     
   end
