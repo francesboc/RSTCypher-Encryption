@@ -1,3 +1,14 @@
+/*
+PROJECT: Rotary Substitution Table cipher (Encryption module)
+
+TEAM MEMBERS:
+  -Francesco Bocchi
+  -Luca Canuzzi
+  -Davide Cossari
+
+*/
+
+//main module
 module rst_cipher(
    input clk
   ,input rst_n
@@ -8,12 +19,14 @@ module rst_cipher(
   ,output ctxt_ready
   ,output err_invalid_ptxt_char
   ,output err_invalid_key
+  ,output key_not_installed
 );
 
   wire [11:0][7:0] rot_table;
   wire key_valid;
   wire is_key_installed;
 
+  //checking if key contains repeated or invalid characters
   check_key check(
     .c0(key[0]),
     .c1(key[1]),
@@ -32,16 +45,20 @@ module rst_cipher(
 	
   assign err_invalid_key = key_valid ? 0 : 1;
 
+  //module that initialize, store and rotate the table
   rot_table ROT_TABLE(
     .clk(clk),
     .rst_n(rst_n),
     .key_valid(key_valid),
-    .ctxt_valid(ctxt_ready), //feedback wire
+    .ctxt_valid(ctxt_ready), //feedback wire to sublaw module
     .key(key),
     .rot_table(rot_table),
     .is_table_initialized(is_key_installed)
   );
 
+  assign key_not_installed = is_key_installed ? 0 : 1;
+
+  //module that makes the plaintext substitution
   substitution_law SUB_LAW(
     .ptxt_char(ptxt_char),
     .ptxt_valid(ptxt_valid),
@@ -59,12 +76,11 @@ module rot_table (
   ,input rst_n
   ,input key_valid
   ,input ctxt_valid
-  ,input [11:0][7:0] key  // 12 bytes ([7:0]) indexed as 0 to 11
-  /* other ports (if any) ... */
+  ,input [11:0][7:0] key
   ,output reg [11:0][7:0] rot_table
   ,output reg is_table_initialized
 );
-
+  //temp registers for substitution
   reg [7:0] temp_row;
   reg [7:0] temp_column;
 
@@ -94,6 +110,7 @@ module rot_table (
       temp_row <= key[5];
       temp_column <= key[4];
       is_table_initialized <= 1;
+      //if substitution is successful, table is rotated 
     end else if(ctxt_valid) begin
       /* perform rotation */
 		  // rows
@@ -123,10 +140,6 @@ module check_key (c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,is_valid);
   output is_valid;
   wire check_all,check0,check1,check2,check3,check4,check5,check6,check7,check8,check9,check10,check11;
   wire  [7:0] key [11:0];
-
-  reg   [8:0] counter; // ?
-
-  wire notformalvalid; // ?
 
   localparam NUL_CHAR = 8'h00;
     
@@ -301,6 +314,7 @@ module substitution_law(
   wire is_lowercase_char;
   wire is_digit_char;
 
+  //checks the validity of the plaintext
   assign is_uppercase_char =  (ptxt_char >= UPPERCASE_A_CHAR) &&
                               (ptxt_char <= UPPERCASE_Z_CHAR);
 

@@ -1,3 +1,13 @@
+/*
+PROJECT: Rotary Substitution Table cipher (Encryption module)
+
+TEAM MEMBERS:
+  -Francesco Bocchi
+  -Luca Canuzzi
+  -Davide Cossari
+
+*/
+
 module rst_cipher_tb;
 
   reg clk = 1'b0;
@@ -7,7 +17,7 @@ module rst_cipher_tb;
   event reset_deassertion;
   
   initial begin
-    #12.8 rst_n = 1'b1; // dopo 12,8 nanosecondi disattivo
+    #12.8 rst_n = 1'b1;
     -> reset_deassertion;
   end
   
@@ -19,6 +29,7 @@ module rst_cipher_tb;
   reg                err_invalid_key;
   reg                err_key_not_installed;
   reg                err_invalid_ptxt_char;
+  reg                key_not_installed;
 
   rst_cipher rst_cipher (
      .clk                       (clk)
@@ -30,6 +41,7 @@ module rst_cipher_tb;
     ,.err_invalid_key           (err_invalid_key)
     ,.err_invalid_ptxt_char     (err_invalid_ptxt_char)
     ,.ctxt_ready                (ctxt_ready)
+    ,.key_not_installed         (key_not_installed)
   );
 
   reg [15:0] EXPECTED_GEN;
@@ -48,11 +60,9 @@ module rst_cipher_tb;
   localparam DIGIT_0_CHAR     = 8'h30;
   localparam DIGIT_9_CHAR     = 8'h39;
 
-  
+  //used in tasks
   reg char_is_letter = 0; 
   reg char_is_digit = 0;
-  //reg [6:0][6:0][7:0] rot_table = {49{NUL_CHAR}};
-  //reg [6:0][6:0][7:0] aux_table = {49{NUL_CHAR}};
   reg is_table_initialized = 0;
   
   reg err_repeated_char = 0;
@@ -233,6 +243,7 @@ module rst_cipher_tb;
 
     join
     $display("Test complete workflow ended.");
+
     $display("Start PDF example test.");
     // cleaning
     @(posedge clk);
@@ -290,7 +301,7 @@ module rst_cipher_tb;
       $display("Testing encryption when key is not installed.");
       ptxt_valid = 1;
       ptxt_char = "3";
-      $display("%s %d %s", ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
+      $display("%d %s %d %s", key_not_installed, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR"); //added
       @(posedge clk);
       key_char = "ABCDEFGHIJKL";
       $display("Testing encryption when plaintext flag is not set.");
