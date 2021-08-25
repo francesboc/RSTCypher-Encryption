@@ -18,7 +18,7 @@ module rst_cipher(
   ,output [15:0] ctxt_str
   ,output ctxt_ready
   ,output err_invalid_ptxt_char
-  ,output err_invalid_key
+  ,output reg err_invalid_key
   ,output key_not_installed
 );
 
@@ -42,8 +42,14 @@ module rst_cipher(
     .c11(key[11]),
     .is_valid(key_valid)
   );
-	
-  assign err_invalid_key = key_valid ? 0 : 1;
+  
+	// converted to sequential logic for timing constraints
+	//assign err_invalid_key = !key_valid;
+  always @ (posedge clk or negedge rst_n)
+    if(!rst_n)
+      err_invalid_key <= 0;
+    else
+      err_invalid_key = !key_valid;
 
   //module that initialize, store and rotate the table
   rot_table ROT_TABLE(
@@ -56,7 +62,7 @@ module rst_cipher(
     .is_table_initialized(is_key_installed)
   );
 
-  assign key_not_installed = is_key_installed ? 0 : 1;
+  assign key_not_installed = !is_key_installed;
 
   //module that makes the plaintext substitution
   substitution_law SUB_LAW(
