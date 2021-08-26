@@ -12,69 +12,59 @@ TEAM MEMBERS:
 module rst_cipher(
    input clk
   ,input rst_n
-  ,input [11:0][7:0] key
   ,input ptxt_valid
+  ,input [11:0][7:0] key
   ,input [7:0] ptxt_char
   ,output reg [15:0] ctxt_str
   ,output reg ctxt_ready
   ,output reg err_invalid_ptxt_char
   ,output reg err_invalid_key
-  ,output reg key_not_installed
+  ,output reg key_not_installed // used to detect when no key is installed
 );
-
-  localparam NUL_CHAR = 8'h00;
 
   wire [11:0][7:0] rot_table;
   wire key_valid;
   wire is_key_installed;
-  wire err_invalid_ptxt_char_wire;
-
-  // store the value that tells if the plaintext is valid
-  reg ptxt_valid_reg;
-  // store plaintext character
-  reg [7:0] ptxt_char_reg;
-  // store the input key
-  reg [11:0][7:0] key_reg;
+  wire ptxt_invalid;
 
   // store the value that tells if the ciphertext is ready
   reg ctxt_ready_reg;
   // store the ciphertext
   reg [15:0] ctxt_str_reg;
-
-  always @ (posedge clk or negedge rst_n)
-    if(!rst_n) begin
-      ctxt_str <= {2{NUL_CHAR}};
-      ctxt_ready <= 0;
-      err_invalid_ptxt_char <= 0;
-      err_invalid_key <= 0;
-      key_not_installed <= 0;
-    end else begin
-      ptxt_valid_reg <= ptxt_valid;
-      ptxt_char_reg <= ptxt_char;
-      key_reg <= key;
-      ctxt_str <= ctxt_str_reg;
-      ctxt_ready <= ctxt_ready_reg;
-      err_invalid_key <= !key_valid;
-      key_not_installed <= !is_key_installed;
-      err_invalid_ptxt_char <= err_invalid_ptxt_char_wire;
-    end
-
+  
   //checking if key contains repeated or invalid characters
   check_key check(
-    .c0(key_reg[0]),
-    .c1(key_reg[1]),
-    .c2(key_reg[2]),
-    .c3(key_reg[3]),
-    .c4(key_reg[4]),
-    .c5(key_reg[5]),
-    .c6(key_reg[6]),
-    .c7(key_reg[7]),
-    .c8(key_reg[8]),
-    .c9(key_reg[9]),
-    .c10(key_reg[10]),
-    .c11(key_reg[11]),
+    .c0(key[0]),
+    .c1(key[1]),
+    .c2(key[2]),
+    .c3(key[3]),
+    .c4(key[4]),
+    .c5(key[5]),
+    .c6(key[6]),
+    .c7(key[7]),
+    .c8(key[8]),
+    .c9(key[9]),
+    .c10(key[10]),
+    .c11(key[11]),
     .is_valid(key_valid)
   );
+  
+	// converted to sequential logic for timing constraints
+	//assign err_invalid_key = !key_valid;
+  always @ (posedge clk or negedge rst_n)
+    if(!rst_n) begin
+      ctxt_str <= {2{8'h00}};
+      ctxt_ready <= 0;
+      err_invalid_key <= 0;
+      err_invalid_ptxt_char <= 0;
+      key_not_installed <= 1;
+    end else begin
+      err_invalid_key <= !key_valid;
+      ctxt_str <= ctxt_str_reg;
+      ctxt_ready <= ctxt_ready_reg;
+      key_not_installed <= !is_key_installed;
+      err_invalid_ptxt_char <= ptxt_invalid;
+    end
 
   //module that initialize, store and rotate the table
   rot_table ROT_TABLE(
@@ -82,22 +72,21 @@ module rst_cipher(
     .rst_n(rst_n),
     .key_valid(key_valid),
     .ctxt_valid(ctxt_ready_reg), //feedback wire to sublaw module
-    .key(key_reg),
+    .key(key),
     .rot_table(rot_table),
     .is_table_initialized(is_key_installed)
   );
 
-  //assign key_not_installed = !is_key_installed;
 
   //module that makes the plaintext substitution
   substitution_law SUB_LAW(
-    .ptxt_char(ptxt_char_reg),
-    .ptxt_valid(ptxt_valid_reg),
+    .ptxt_char(ptxt_char),
+    .ptxt_valid(ptxt_valid),
     .rot_table(rot_table),
     .is_key_installed(is_key_installed),
     .ctxt_str(ctxt_str_reg),
     .ctxt_valid(ctxt_ready_reg),
-    .err_invalid_ptxt_char(err_invalid_ptxt_char_wire)
+    .err_invalid_ptxt_char(ptxt_invalid)
   );
 
 endmodule
@@ -170,6 +159,7 @@ module check_key (c0,c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,is_valid);
 
   output is_valid;
   wire check_all,check0,check1,check2,check3,check4,check5,check6,check7,check8,check9,check10,check11;
+  wire  [7:0] key [11:0];
 
   localparam NUL_CHAR = 8'h00;
     

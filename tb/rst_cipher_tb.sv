@@ -232,6 +232,7 @@ module rst_cipher_tb;
       end: TEST_WORKFLOW
 
       begin: TEST_WORKFLOW_CHECK
+        @(posedge clk);
         for(int i = 0; i < 62; i++) begin
           @(posedge clk);
           EXPECTED_CHECK = EXPECTED_QUEUE.pop_front();
@@ -250,6 +251,8 @@ module rst_cipher_tb;
     rst_n = 0;
     is_table_initialized = 0;
     key_char = {12{NUL_CHAR}};
+    ptxt_valid = 0;
+    ptxt_char = NUL_CHAR;
     @(posedge clk);
     rst_n = 1;
     key_char = "ABCDEFGHIJKL";
@@ -259,23 +262,24 @@ module rst_cipher_tb;
       ptxt_valid = 1;
       ptxt_char = "H";
       @(posedge clk);
-      $display("ptx: %s ctx: %s %s",ptxt_char, ctxt_char, "KL" === ctxt_char ? "OK" : "ERROR");
       ptxt_valid = 1;
       ptxt_char = "e";
       @(posedge clk);
-      $display("ptx: %s ctx: %s %s",ptxt_char, ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
+      $display("ptx: H ctx: %s %s", ctxt_char, "KL" === ctxt_char ? "OK" : "ERROR");
       ptxt_valid = 1;
       ptxt_char = "l";
       @(posedge clk);
-      $display("ptx: %s ctx: %s %s",ptxt_char, ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
+      $display("ptx: e ctx: %s %s", ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
       ptxt_valid = 1;
       ptxt_char = "l";
       @(posedge clk);
-      $display("ptx: %s ctx: %s %s",ptxt_char, ctxt_char, "ED" === ctxt_char ? "OK" : "ERROR");
+      $display("ptx: l ctx: %s %s", ctxt_char, "GJ" === ctxt_char ? "OK" : "ERROR");
       ptxt_valid = 1;
       ptxt_char = "o";
       @(posedge clk);
-      $display("ptx: %s ctx: %s %s",ptxt_char, ctxt_char, "EF" === ctxt_char ? "OK" : "ERROR");
+      $display("ptx: l ctx: %s %s", ctxt_char, "ED" === ctxt_char ? "OK" : "ERROR");
+      @(posedge clk);
+      $display("ptx: o ctx: %s %s", ctxt_char, "EF" === ctxt_char ? "OK" : "ERROR");
     end: HELLO_EXAMPLE
     $display("Test PDF example ended.");
 
@@ -285,6 +289,8 @@ module rst_cipher_tb;
     rst_n = 0;
     is_table_initialized = 0;
     key_char = {12{NUL_CHAR}};
+    ptxt_valid = 0;
+    ptxt_char = NUL_CHAR;
     @(posedge clk);
     rst_n = 1;
     @(posedge clk);
@@ -301,38 +307,79 @@ module rst_cipher_tb;
       $display("Testing encryption when key is not installed.");
       ptxt_valid = 1;
       ptxt_char = "3";
-      $display("key_not_installed: %d ptx: %c ptx_valid: %d ctx: %s ctx_ready: %d %s", key_not_installed,ptxt_char,ptxt_valid, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
+      @(posedge clk);
+      $display("key_not_installed: %d ptx: %c ptx_valid: %d ctx: %s ctx_ready: %d %s", key_not_installed,ptxt_char,ptxt_valid, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       key_char = "ABCDEFGHIJKL";
+      @(posedge clk);
       $display("Testing encryption when plaintext flag is not set.");
       ptxt_valid = 0;
       ptxt_char = NUL_CHAR;
-      $display("ptx_valid: %d ctx: %s ctx_ready: %d %s",ptxt_valid, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
+      @(posedge clk);
+      $display("ptx_valid: %d ctx: %s ctx_ready: %d %s",ptxt_valid, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       $display("Testing encryption when plaintext is not valid.");
       ptxt_valid = 1;
       ptxt_char = "*";
-      $display("err_invalid_ptx: %d ptx: %c ctx: %s ctx_ready: %d %s",err_invalid_ptxt_char, ptxt_char, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
+      @(posedge clk);
+      $display("err_invalid_ptx: %d ptx: %c ctx: %s ctx_ready: %d %s",err_invalid_ptxt_char, ptxt_char, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
       $display("Testing rotation.");
       ptxt_valid = 1;
       ptxt_char = "a";
       @(posedge clk);
-      $display("ptx: %c ctx: %s ctx_ready: %d %s",ptxt_char, ctxt_char, ctxt_ready, 1 === ctxt_ready ? "OK" : "ERROR");
-      $display("Testing rotation when plaintext is not valid. The rot table should not rotate.");
       ptxt_valid = 1;
       ptxt_char = "-";
       @(posedge clk);
-      $display("ptx: %c ctx: %s ctx_ready: %d %s",ptxt_char, ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
-      $display("Testing rotation after an invalid previous character. The rot table hasn't been rotated when ptx was '-'");
+      $display("ptx: a ctx: %s ctx_ready: %d %s", ctxt_char, ctxt_ready, 1 === ctxt_ready ? "OK" : "ERROR");
       ptxt_valid = 1;
       ptxt_char = "b";
       @(posedge clk);
+      $display("Testing rotation when plaintext is not valid. The rot table should not rotate.");
+      $display("ptx: - ctx: %s ctx_ready: %d %s", ctxt_char, ctxt_ready, 0 === ctxt_ready ? "OK" : "ERROR");
+      @(posedge clk);
+      $display("Testing rotation after an invalid previous character. The rot table hasn't been rotated when ptx was '-'");
       $display("ptx: %c ctx: %s ctx_ready: %d %s",ptxt_char, ctxt_char, ctxt_ready, 1 === ctxt_ready ? "OK" : "ERROR");
       @(posedge clk);
     end: TEST_ERROR
 
     $display("Corner case test ended.");
+
+    $display("Start test for waveforms.");
+    // cleaning
+    @(posedge clk);
+    rst_n = 0;
+    is_table_initialized = 0;
+    key_char = {12{NUL_CHAR}};
+    ptxt_valid = 0;
+    ptxt_char = NUL_CHAR;
+    @(posedge clk);
+    rst_n = 1;
+    key_char = "0123456789ab";
+    @(posedge clk);
+
+    begin: WAVEFORMS
+      ptxt_valid = 0;
+      ptxt_char = "a";
+      @(posedge clk);
+      ptxt_valid = 0;
+      ptxt_char = "a";
+      @(posedge clk);
+      ptxt_valid = 1;
+      ptxt_char = "a";
+      @(posedge clk);
+      ptxt_valid = 0;
+      ptxt_char = "a";
+      @(posedge clk);
+      ptxt_valid = 1;
+      ptxt_char = "b";
+      @(posedge clk);
+      ptxt_valid = 1;
+      ptxt_char = "c";
+      @(posedge clk);
+      @(posedge clk);
+    end: WAVEFORMS
+    $display("Waveforms test ended.");
     $stop;
     
   end
