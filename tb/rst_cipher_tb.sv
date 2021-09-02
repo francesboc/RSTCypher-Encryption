@@ -25,11 +25,10 @@ module rst_cipher_tb;
   reg   [7:0]        ptxt_char;
   reg                ptxt_valid;
   wire  [15:0]       ctxt_char;
-  reg                ctxt_ready;
-  reg                err_invalid_key;
-  reg                err_key_not_installed;
-  reg                err_invalid_ptxt_char;
-  reg                key_not_installed;
+  wire               ctxt_ready;
+  wire               err_invalid_key;
+  wire               err_invalid_ptxt_char;
+  wire               key_not_installed;
 
   rst_cipher rst_cipher (
      .clk                       (clk)
