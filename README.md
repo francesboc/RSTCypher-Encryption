@@ -6,5 +6,5 @@
 Cyclone V 
 
 ## Tools
-*Modelsim
-*Quartus
+-Modelsim
+-Quartus
